@@ -1,0 +1,1 @@
+#useful info after terraform apply so I can reuse them for the frontend

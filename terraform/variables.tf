@@ -1,0 +1,1 @@
+#here I can define the varaibles I want to change without touching the code, and I make the deploy repeatible
