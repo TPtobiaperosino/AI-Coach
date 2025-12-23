@@ -26,6 +26,8 @@ assume_role_policy = jsonencode({
 })
 }
 
+# --------------------------------------------------------------
+
 #  Now I'll attach a policy (aws managed) to the role to allow then Lmabda, when assumes this role, to access logs in cloudwatch
 #  CloudWatch role permission
 
@@ -33,3 +35,7 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
     role = aws_iam_role.first_lambda.name          # here I could also use "ai-coach-lambda-role", but is not best practice, if I then chance the name I brake terraform
     policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+# --------------------------------------------------------------
+
+#  
