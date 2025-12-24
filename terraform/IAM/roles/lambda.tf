@@ -26,6 +26,8 @@ assume_role_policy = jsonencode({
 })
 }
 
+# So lambda assumes the role, STS with the assumption gives temporary credentials to lambda that can then access different functionalities based on the permission policies of the role
+
 # --------------------------------------------------------------
 
 #  Now I'll attach a policy (aws managed) to the role to allow then Lmabda, when assumes this role, to access logs in cloudwatch
@@ -48,24 +50,29 @@ resource "aws_iam_policy" "permission_policy_lambda_s3_access" {
         Statement = [
             {
             Sid = "ListBucket"                 
-            Effect = "Allow"
+            Effect = "Allow"                # module = I'm using a module, uploads_s3 = name of the module, bcuket_arn = output
             Action = ["s3:ListBucket"]      # First I need to give permission to the Lambda role to look at the names (keys) of the objects in the bucket
-            Resource = aws_s3_bucket.uploads.arn  # no principal but I need the what, at which resource am I refferring
+            Resource = module.uploads_s3.bucket_arn  # no principal but I need the what, at which resource am I refferring
             },  # Resource is = to a single element, and not a list, because we are referring just to the bucket
-            {
+            {   
             Sid = "ObjectOps"
             Effect = "Allow"
             Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"] #read, add and delete objects from bucket
-            Resource = ["${aws_s3_bucket.uploads.arn}/*"] # list becasue I could include more prefix
-                                        #IT IS PROBABLY TOO PERMISSIVE --> I'm including all the objects in the bucket and not specifying the prefix
+            Resource = ["${module.uploads_s3.bucket_arn}/uploads/*"] # list becasue I could include more prefix
+                                        # IT IS PROBABLY TOO PERMISSIVE --> I'm including all the objects in the bucket and not specifying the prefix
             }                           # * means consider everything in the path until /, $ is to replace the path with the corresponding arn adress 
         ]                               # Not using the $ and putting directly the arn adress is not sustainable over time, if I change the name of the bucket the architecture stops working
-    })
+    })                                  # !!! I need this specific format because I need to refer to the ARNs of the objects, not just of the bucket
 }
 
-# now I can assign the policy just created to the role
+# now I can attach the policy just created to the role
 
 resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
     role = aws_iam_role.lambda_role.name
     policy_arn = aws_iam_policy.permission_policy_lambda_s3_access.arn
 }
+
+# --------------------------------------------------------------
+
+# Permission to access Bedrock + attach to the role
+

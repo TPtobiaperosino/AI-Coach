@@ -9,7 +9,6 @@ terraform {
 }
 # Dependencies block
 
-
 provider "aws" {
   region = "eu-west-2"
   assume_role {
@@ -27,3 +26,7 @@ provider "aws" {
 # Security Token Service provides temporary credentials for limited time that Terraform can use to create resources and connect with APIs
 # When time finishes the credentials expire without exposing the permanent ones of the users
 # Everything is logged in cloudtrail under the session "terraform"
+
+# CloudWatch vs CloudTrail:
+# CloudWatch: what happens in the resources?
+# CloudTrail: who did what in AWS?
