@@ -76,3 +76,55 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
 
 # Permission to access Bedrock + attach to the role
 
+resource "aws_iam_policy" "permission_policy_lambda_bedrock_access" {
+    name = "permission-policy-ai-coach-lambda-bedrock-access"
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+            {
+                Sid = "BedrockInvocation"
+                Effect = "Allow"
+                Action = [
+                    "bedrock:InvokeModel"
+                ]
+                Resource = "arn:aws:bedrock:eu-wet-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
+            }
+        ]
+    })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_bedrock_attach" {
+    role = aws_iam_role.lambda_role.name
+    policy_arn = aws_iam_policy.permission_policy_lambda_bedrock_access.arn 
+}
+
+# --------------------------------------------------------------
+
+# Permission to access DynamoDB + attach to the role
+
+resource "aws_iam_policy" "permission_policy_lambda_dynamodb_access" {
+    name = "permission-policy-ai-coach-lambda-dynamodb-access"
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+            {
+                Sid = "DynamoDBAcces"
+                Effect = "Allow"
+                Action = [
+                    "dynamodb:PutItem"
+                    "dynamodb:UpdateItem"
+                    "dynamodb:GetItem"
+                    "dynamodb:Query"
+                ]
+                Resource = ""
+            }
+        ]
+    })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_attach" {
+    role = aws_iam_role.lambda_role.name
+    policy_arn = aws_iam_policy.permission_policy_lambda_dynamodb_access.arn 
+}
