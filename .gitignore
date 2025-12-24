@@ -1,0 +1,14 @@
+# Ignore Terraform state and provider files
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate.backup
+crash.log
+*.log
+*.tfvars
+*.tfvars.json
+# Python cache
+__pycache__/
+*.pyc
+# VSCode
+.vscode/

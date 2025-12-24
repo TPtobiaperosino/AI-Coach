@@ -5,7 +5,7 @@ resource "aws_s3_bucket" "uploads" {
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle_uploads" {
     bucket = aws_s3_bucket.uploads.id # this is the id of the bucket as resource, arn is for policies
 
-    rule {
+    rule {              # this is a block!
         id = "delete-expired-uploads" # this is the id of the rule
         status = "Enabled"
         filter {prefix = "uploads/"}
