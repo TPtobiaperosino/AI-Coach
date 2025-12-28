@@ -8,4 +8,4 @@ output "bucket_name" {
 
 
 # these are just two ways to refer to the s3 bucket
-# id is for s3 operations, ARN is for IAM policies
+# id is for s3 operations, ARN is for IAM policies --> bucket name = id since it's globally unique, but is an exception for s3

@@ -59,9 +59,8 @@ resource "aws_iam_policy" "permission_policy_lambda_s3_access" {
             Effect = "Allow"
             Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"] #read, add and delete objects from bucket
             Resource = ["${module.uploads_s3.bucket_arn}/uploads/*"] # list becasue I could include more prefix
-                                        # IT IS PROBABLY TOO PERMISSIVE --> I'm including all the objects in the bucket and not specifying the prefix
             }                           # * means consider everything in the path until /, $ is to replace the path with the corresponding arn adress 
-        ]                               # Not using the $ and putting directly the arn adress is not sustainable over time, if I change the name of the bucket the architecture stops working
+        ]                               # $ allows to replace the variable with the arn address + extra text (uploads). if I need extra text I ned to use $
     })                                  # !!! I need this specific format because I need to refer to the ARNs of the objects, not just of the bucket
 }
 
@@ -85,10 +84,8 @@ resource "aws_iam_policy" "permission_policy_lambda_bedrock_access" {
             {
                 Sid = "BedrockInvocation"
                 Effect = "Allow"
-                Action = [
-                    "bedrock:InvokeModel"
-                ]
-                Resource = "arn:aws:bedrock:eu-wet-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
+                Action = ["bedrock:InvokeModel"]
+                Resource = "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
             }
         ]
     })
@@ -110,15 +107,15 @@ resource "aws_iam_policy" "permission_policy_lambda_dynamodb_access" {
         Version = "2012-10-17"
         Statement = [
             {
-                Sid = "DynamoDBAcces"
+                Sid = "DynamoDBAccess"
                 Effect = "Allow"
                 Action = [
-                    "dynamodb:PutItem"
-                    "dynamodb:UpdateItem"
-                    "dynamodb:GetItem"
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:GetItem",
                     "dynamodb:Query"
                 ]
-                Resource = ""
+                Resource = aws_dynamodb_table.recommendations.arn # here for example if I'd decide to use GSI --> reading specific keys I'd need $
             }
         ]
     })

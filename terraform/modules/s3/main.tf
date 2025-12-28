@@ -9,7 +9,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle_uploads" {
         id = "delete-expired-uploads" # this is the id of the rule
         status = "Enabled"
         filter {prefix = "uploads/"}
-        expiration {days = 3}
+        expiration {days = 14}
     }
 }
 

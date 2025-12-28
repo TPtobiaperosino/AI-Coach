@@ -12,7 +12,7 @@ terraform {
 provider "aws" {
   region = "eu-west-2"
   assume_role {
-    role_arn = "arn:aws:iam::946700825722:role/AdminRole"
+    role_arn     = "arn:aws:iam::946700825722:role/AdminRole"
     session_name = "terraform"
   }
 }
