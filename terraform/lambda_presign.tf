@@ -18,5 +18,5 @@ resource "aws_lambda_function" "presign" {
             TABLE_NAME = aws_dynamodb_table.recommendations.name
         }
     }
-    timeout = 10
+    timeout = 30
 }
