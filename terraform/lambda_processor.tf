@@ -4,7 +4,7 @@
 
 resource "aws_lambda_function" "processor" {
     function_name = "ai-coach-processor"
-    role = "aws_iam_role.lambda_role.arn"
+    role = aws_iam_role.lambda_role.arn
     runtime = "python3.12"
     handler = "function_processor.handler"
 

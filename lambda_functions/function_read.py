@@ -37,7 +37,7 @@ def handler(event, context):
 #        {
 #            "PK": "USER_123",
 #            "SK": "RECOMMENDATION_abc123",
-#            "s3Key": "uploads/123/abc123.jpg",
+#            "s3_key": "uploads/123/abc123.jpg",
 #            "status": "PROCESSED",
 #            "createdAt": "2025-01-03T10:15:30Z",
 #            "targets": {
@@ -64,7 +64,7 @@ def handler(event, context):
 #        {
 #            "PK": "USER_123",
 #            "SK": "RECOMMENDATION_def456",
-#            "s3Key": "uploads/123/def456.jpg",
+#            "s3_key": "uploads/123/def456.jpg",
 #            "status": "PROCESSED",
 #            "createdAt": "2025-01-02T19:40:10Z",
 #            "targets": {

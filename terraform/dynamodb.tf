@@ -2,18 +2,17 @@ resource "aws_dynamodb_table" "recommendations" {
   name         = "ai-running-coach-recommendations"
   billing_mode = "PAY_PER_REQUEST" # If i don't put on-demand the standard is provisioned
 
-  PK = "userId" # primary key
-
-  SK = "createdAt" # sort key
+  hash_key = "PK"
+  range_key = "SK"
 
   attribute {
-    name = "userId"
-    type = "S" # I need to define the attribute type to then use it as key
+    name = "PK"
+    type = "S"
   }
 
-  attribute {
-    name = "createdAt"
-    type = "S" # I need to define the attribute type to then use it as key
+    attribute {
+    name = "SK"
+    type = "S"
   }
 
   ttl {

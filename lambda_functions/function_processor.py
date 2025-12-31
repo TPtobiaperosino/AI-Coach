@@ -187,7 +187,7 @@ def handler(event, context):        # In event I'll find a JSON with what happen
             "SK": f"RECOMMENDATION_{upload_id}",
 
             # Dati di dominio (tutti personalizzabili)
-            "s3Key": s3_key,
+            "s3_key": s3_key,
             "targets": targets,
             "analysis": result,
 
