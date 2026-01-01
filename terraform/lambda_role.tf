@@ -9,21 +9,21 @@
 # in aws avery entity that execute actions has to have a role (an identity)
 
 resource "aws_iam_role" "lambda_role" {
-    name = "ai-coach-lambda-role"       # name that is in the console
+  name = "ai-coach-lambda-role" # name that is in the console
 
 
-# assume_role_policy is the trust policy of the role and says who can assume that role. It is an attribute of the role.
-# this role will be used only by lambda
-# sto dicendo che a lambda e' permesso di assumere il ruolo
+  # assume_role_policy is the trust policy of the role and says who can assume that role. It is an attribute of the role.
+  # this role will be used only by lambda
+  # sto dicendo che a lambda e' permesso di assumere il ruolo
 
-assume_role_policy = jsonencode({
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = { Service = "lambda.amazonaws.com" } # Trust policies set who can assume the role, so they have a principal
-    }]                                                   # Principal is like saying "who"? Resource is "what"?
-})
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" } # Trust policies set who can assume the role, so they have a principal
+    }]                                                 # Principal is like saying "who"? Resource is "what"?
+  })
 }
 
 # So lambda assumes the role, STS with the assumption gives temporary credentials to lambda that can then access different functionalities based on the permission policies of the role
@@ -34,8 +34,8 @@ assume_role_policy = jsonencode({
 #  CloudWatch role permission
 
 resource "aws_iam_role_policy_attachment" "lambda_logs_attach" {
-    role = aws_iam_role.lambda_role.name          # here I could also use "ai-coach-lambda-role", but is not best practice, if I then chance the name I brake terraform
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = aws_iam_role.lambda_role.name # here I could also use "ai-coach-lambda-role", but is not best practice, if I then chance the name I brake terraform
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 # --------------------------------------------------------------
@@ -43,32 +43,32 @@ resource "aws_iam_role_policy_attachment" "lambda_logs_attach" {
 #  S3 access permission policy (created by myself) + attach it to the role
 
 resource "aws_iam_policy" "permission_policy_lambda_s3_access" {
-    name = "permission-policy-ai-coach-lambda-s3-access"
+  name = "permission-policy-ai-coach-lambda-s3-access"
 
-    policy = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-            {
-            Sid = "ListBucket"                 
-            Effect = "Allow"                # module = I'm using a module, uploads_s3 = name of the module, bcuket_arn = output
-            Action = ["s3:ListBucket"]      # First I need to give permission to the Lambda role to look at the names (keys) of the objects in the bucket
-            Resource = module.uploads_s3.bucket_arn  # no principal but I need the what, at which resource am I refferring
-            },  # Resource is = to a single element, and not a list, because we are referring just to the bucket
-            {   
-            Sid = "ObjectOps"
-            Effect = "Allow"
-            Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"] #read, add and delete objects from bucket
-            Resource = ["${module.uploads_s3.bucket_arn}/uploads/*"] # list becasue I could include more prefix
-            }                           # * means consider everything in the path until /, $ is to replace the path with the corresponding arn adress 
-        ]                               # $ allows to replace the variable with the arn address + extra text (uploads). if I need extra text I ned to use $
-    })                                  # !!! I need this specific format because I need to refer to the ARNs of the objects, not just of the bucket
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ListBucket"
+        Effect   = "Allow"                      # module = I'm using a module, uploads_s3 = name of the module, bcuket_arn = output
+        Action   = ["s3:ListBucket"]            # First I need to give permission to the Lambda role to look at the names (keys) of the objects in the bucket
+        Resource = module.uploads_s3.bucket_arn # no principal but I need the what, at which resource am I refferring
+      },                                        # Resource is = to a single element, and not a list, because we are referring just to the bucket
+      {
+        Sid      = "ObjectOps"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"] #read, add and delete objects from bucket
+        Resource = ["${module.uploads_s3.bucket_arn}/uploads/*"]       # list becasue I could include more prefix
+      }                                                                # * means consider everything in the path until /, $ is to replace the path with the corresponding arn adress 
+    ]                                                                  # $ allows to replace the variable with the arn address + extra text (uploads). if I need extra text I ned to use $
+  })                                                                   # !!! I need this specific format because I need to refer to the ARNs of the objects, not just of the bucket
 }
 
 # now I can attach the policy just created to the role
 
 resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
-    role = aws_iam_role.lambda_role.name
-    policy_arn = aws_iam_policy.permission_policy_lambda_s3_access.arn
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.permission_policy_lambda_s3_access.arn
 }
 
 # --------------------------------------------------------------
@@ -76,24 +76,24 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
 # Permission to access Bedrock + attach to the role
 
 resource "aws_iam_policy" "permission_policy_lambda_bedrock_access" {
-    name = "permission-policy-ai-coach-lambda-bedrock-access"
+  name = "permission-policy-ai-coach-lambda-bedrock-access"
 
-    policy = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-            {
-                Sid = "BedrockInvocation"
-                Effect = "Allow"
-                Action = ["bedrock:InvokeModel"]
-                Resource = "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
-            }
-        ]
-    })
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "BedrockInvocation"
+        Effect   = "Allow"
+        Action   = ["bedrock:InvokeModel"]
+        Resource = "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_bedrock_attach" {
-    role = aws_iam_role.lambda_role.name
-    policy_arn = aws_iam_policy.permission_policy_lambda_bedrock_access.arn 
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.permission_policy_lambda_bedrock_access.arn
 }
 
 # --------------------------------------------------------------
@@ -101,27 +101,27 @@ resource "aws_iam_role_policy_attachment" "lambda_bedrock_attach" {
 # Permission to access DynamoDB + attach to the role
 
 resource "aws_iam_policy" "permission_policy_lambda_dynamodb_access" {
-    name = "permission-policy-ai-coach-lambda-dynamodb-access"
+  name = "permission-policy-ai-coach-lambda-dynamodb-access"
 
-    policy = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-            {
-                Sid = "DynamoDBAccess"
-                Effect = "Allow"
-                Action = [
-                    "dynamodb:PutItem",
-                    "dynamodb:UpdateItem",
-                    "dynamodb:GetItem",
-                    "dynamodb:Query"
-                ]
-                Resource = aws_dynamodb_table.recommendations.arn # here for example if I'd decide to use GSI --> reading specific keys I'd need $
-            }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DynamoDBAccess"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query"
         ]
-    })
+        Resource = aws_dynamodb_table.recommendations.arn # here for example if I'd decide to use GSI --> reading specific keys I'd need $
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_dynamodb_attach" {
-    role = aws_iam_role.lambda_role.name
-    policy_arn = aws_iam_policy.permission_policy_lambda_dynamodb_access.arn 
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.permission_policy_lambda_dynamodb_access.arn
 }

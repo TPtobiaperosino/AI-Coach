@@ -2,7 +2,7 @@ resource "aws_dynamodb_table" "recommendations" {
   name         = "ai-running-coach-recommendations"
   billing_mode = "PAY_PER_REQUEST" # If i don't put on-demand the standard is provisioned
 
-  hash_key = "PK"
+  hash_key  = "PK"
   range_key = "SK"
 
   attribute {
@@ -10,7 +10,7 @@ resource "aws_dynamodb_table" "recommendations" {
     type = "S"
   }
 
-    attribute {
+  attribute {
     name = "SK"
     type = "S"
   }

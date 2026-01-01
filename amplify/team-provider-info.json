@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-mealaicoach-dev-941ab-authRole",
+      "UnauthRoleArn": "arn:aws:iam::946700825722:role/amplify-mealaicoach-dev-941ab-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::946700825722:role/amplify-mealaicoach-dev-941ab-authRole",
+      "Region": "eu-west-1",
+      "DeploymentBucketName": "amplify-mealaicoach-dev-941ab-deployment",
+      "UnauthRoleName": "amplify-mealaicoach-dev-941ab-unauthRole",
+      "StackName": "amplify-mealaicoach-dev-941ab",
+      "StackId": "arn:aws:cloudformation:eu-west-1:946700825722:stack/amplify-mealaicoach-dev-941ab/509b1be0-e739-11f0-bda6-029a8531de4f",
+      "AmplifyAppId": "d1tq8uyvo4vkcr"
+    }
+  }
+}

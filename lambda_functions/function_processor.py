@@ -24,6 +24,7 @@ import boto3
 import base64
 import os
 import json
+from boto3.dynamodb.conditions import Key
 from datetime import datetime, timezone       # I need it to identify the exact moment when the event happened --> createdAt
                                               # from the datetime module take the class datetime. the class datetime represents a specific point in the time
 
@@ -62,6 +63,22 @@ def handler(event, context):        # In event I'll find a JSON with what happen
    
    targets = uploaded_item["Item"]["targets"]
 
+# CONSUMED SO FAR
+
+   all_recommendations = recommendations_table.query(
+     KeyConditionExpression = Key("PK").eq(f"USER_{user_id}") & Key("SK").begins_with("RECOMMENDATION_")
+  )
+
+   today = datetime.now(timezone.utc).date().isoformat()
+   total_today = {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
+
+   for item in all_recommendations["Items"]:
+    if item["createdAt"].startswith(today):
+        total_today["calories"] += item["analysis"]["meal_estimate"]["calories"]
+        total_today["protein_g"] += item["analysis"]["meal_estimate"]["protein_g"]
+        total_today["carbs_g"] += item["analysis"]["meal_estimate"]["carbs_g"]
+        total_today["fat_g"] += item["analysis"]["meal_estimate"]["fat_g"]
+
 # TRACKING UPLOAD
 
    recommendations_table.update_item(
@@ -79,70 +96,85 @@ def handler(event, context):        # In event I'll find a JSON with what happen
    )
 
    PROMPT_TEMPLATE = """
-    You are a nutrition analysis and coaching assistant.
+You are a nutrition analysis and coaching assistant.
 
-    You will be given:
-    - An image of a single meal
-    - The user's DAILY nutrition targets (calories and macros)
+You will be given:
+- An image of a single meal
+- The user's DAILY nutrition targets (calories and macros)
+- The user's total nutrition consumed so far today
 
-    Your job is to:
-    1. Analyze the meal shown in the image
-    2. Estimate its nutritional content
-    3. Evaluate the meal quality
-    4. Provide a concrete recommendation for the NEXT meal to help the user reach their daily targets
+Your job is to:
+1. Analyze the meal shown in the image
+2. Estimate its nutritional content
+3. Evaluate the meal quality
+4. **Write a clear, direct recommendation for the user about what to eat next to reach their daily targets.**
+5. Your output MUST be a JSON object that follows the schema below, but the content (especially "next_meal_recommendation") must be written as if you are speaking directly to the user, not as a technical report.
 
-    IMPORTANT RULES
-    - Base your analysis ONLY on what is visible in the image.
-    - If something is unclear, make a reasonable assumption and mention uncertainty.
-    - Be realistic and practical. No extreme or unrealistic advice.
-    - Do NOT include markdown, explanations, or extra text.
-    - Output MUST be valid JSON and MUST follow the schema exactly.
+IMPORTANT RULES
+- Base your analysis ONLY on what is visible in the image.
+- If something is unclear, make a reasonable assumption and mention uncertainty.
+- Be realistic and practical. No extreme or unrealistic advice.
+- Do NOT include markdown, explanations, or extra text.
+- Output MUST be valid JSON and MUST follow the schema exactly.
 
-    -------------------------
-    DAILY TARGETS
-    -------------------------
-    {{daily_targets_json}}
+-------------------------
+DAILY TARGETS
+-------------------------
+{{daily_targets_json}}
 
-    -------------------------
-    OUTPUT SCHEMA (STRICT)
-    -------------------------
-    {
-    "meal_estimate": {
-        "calories": number,
-        "protein_g": number,
-        "carbs_g": number,
-        "fat_g": number
-    },
-    "meal_score": number,
-    "meal_evaluation": string,
-    "next_meal_recommendation": {
-        "goal": string,
-        "suggested_foods": [string],
-        "macro_focus": string
-    },
-    "confidence_note": string
-    }
+-------------------------
+CONSUMED SO FAR
+-------------------------
+{{consumed_so_far_json}}
 
-    -------------------------
-    SCORING GUIDELINES
-    -------------------------
-    - 90-100: excellent meal quality and balance
-    - 70-89: good but improvable
-    - 50-69: acceptable but suboptimal
-    - <50: poor nutritional quality
+-------------------------
+OUTPUT SCHEMA (STRICT)
+-------------------------
+{
+"meal_estimate": {
+    "calories": number,
+    "protein_g": number,
+    "carbs_g": number,
+    "fat_g": number
+},
+"meal_score": number,
+"meal_evaluation": string,
+"next_meal_recommendation": {
+    "goal": string,
+    "suggested_foods": [string],
+    "macro_focus": string
+},
+"confidence_note": string
+}
 
-    -------------------------
-    NEXT MEAL LOGIC
-    -------------------------
-    - Use the remaining daily targets to guide the recommendation
-    - Suggest realistic foods someone could eat next
-    - Focus on what is most missing (protein, fiber, calories, micronutrients)
-    - Keep the recommendation concise and actionable
-    """
+-------------------------
+SCORING GUIDELINES
+-------------------------
+- 90-100: excellent meal quality and balance
+- 70-89: good but improvable
+- 50-69: acceptable but suboptimal
+- <50: poor nutritional quality
+
+-------------------------
+NEXT MEAL LOGIC
+-------------------------
+- Use the remaining daily targets to guide the recommendation
+- Suggest realistic foods someone could eat next
+- Focus on what is most missing (protein, fiber, calories, micronutrients)
+- Keep the recommendation concise, actionable, and written as if you are talking to the user
+"""
 
    prompt_text = PROMPT_TEMPLATE.replace(
         "{{daily_targets_json}}",
-        json.dumps(targets))
+        json.dumps(targets)
+   )
+
+   prompt_text = prompt_text.replace(
+        "{{consumed_so_far_json}}",
+        json.dumps(total_today)
+   )  
+   
+   # ADD REPLACE FOR TOTAL UNTIL NOW
 
    api_response = bedrock.invoke_model(
      modelId="amazon.nova-2-lite-v1:0",
@@ -182,11 +214,10 @@ def handler(event, context):        # In event I'll find a JSON with what happen
 
    recommendations_table.put_item(
         Item={
-            # Chiavi primarie (definite da te in Terraform)
+            
             "PK": f"USER_{user_id}",
             "SK": f"RECOMMENDATION_{upload_id}",
 
-            # Dati di dominio (tutti personalizzabili)
             "s3_key": s3_key,
             "targets": targets,
             "analysis": result,

@@ -18,20 +18,20 @@
 # SQS: I need it when processing accumulates, monitor speed, s3 + lambda is already highy scalable. SQS could help if I exceed the concurrency limit, I need to process a speicifc number of images per minute for example (need specific speed).
 
 resource "aws_lambda_permission" "allow_s3_invoke_processor" {
-    statement_id = "AllowS3InvokeProcessor"
-    action = "lambda:InvokeFunction"
-    function_name = aws_lambda_function.processor.function_name
-    principal = "s3.amazonaws.com"
-    source_arn = aws_s3_bucket.uploads.arn
+  statement_id  = "AllowS3InvokeProcessor"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.processor.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = module.uploads_s3.bucket_arn
 }
 
 resource "aws_s3_bucket_notification" "image_uploaded" {
-    bucket = aws_s3_bucket.uploads.id
+  bucket = module.uploads_s3.bucket_name
 
-    lambda_function {
-        lambda_function_arn = aws_lambda_function.processor.arn
-        events = ["s3:ObjectCreated:*"]
-        filter_prefix = "uploads/"
-    }
-    depends_on = [aws_lambda_permission.allow_s3_invoke_processor]
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.processor.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "uploads/"
+  }
+  depends_on = [aws_lambda_permission.allow_s3_invoke_processor]
 }
