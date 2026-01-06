@@ -58,36 +58,36 @@ def handler(event, context):
 # claims = fields inside jwt
 # sub = userId
 
-    claims = event["requestContext"]["authorizer"]["jwt"]["claims"]
+#    claims = event["requestContext"]["authorizer"]["jwt"]["claims"]
 
-    targets = {
-        "calories": int(claims["custom:targetCalories"]), #custom is the other type of attributes in cognito that I define. with int I convert the string in number
-        "protein": int(claims["custom:targetProtein"]),
-        "carbs": int(claims["custom:targetCarbs"]),
-        "fat": int(claims["custom:targetFat"]),
-    }
+#    targets = {
+ #       "calories": int(claims["custom:targetCalories"]), #custom is the other type of attributes in cognito that I define. with int I convert the string in number
+ #       "protein": int(claims["custom:targetProtein"]),
+ #       "carbs": int(claims["custom:targetCarbs"]),
+ #       "fat": int(claims["custom:targetFat"]),
+ #   }
 
     upload_id = str(uuid.uuid4()) #uuid is a library/module used to create Universally Unique Identifier, uuid4 is the function to create RANDOM uuid
-
+    s3_key = f"uploads/{user_id}/{upload_id}.jpg"
     recommendations_table.put_item(
         Item={
             "PK": f"USER_{user_id}",
             "SK": f"UPLOAD_{upload_id}",
-            "targets": targets,
+     #       "targets": targets,
+            "s3Key": s3_key,
             "createdAt": datetime.now(timezone.utc).isoformat(), #isoformat convert the object datetime in string date format
             "status": "UPLOADING"
 
         }
     )
 
-    s3_key = f"uploads/{user_id}/{upload_id}.jpg"
+    
 
     upload_url = s3.generate_presigned_url(
         ClientMethod="put_object",      # here I'm just saying what the user can do (upload = write = put)
         Params={                        # provides parameters to the API call, s3 works with bucket and key, and during runtime key is provided.
             "Bucket": BUCKET_NAME,      # params defines the exact S3 API operation that this presigned URL authorizes (PUT object only)
             "Key": s3_key,                  
-            "ContentType": "image/jpeg"
         },
         ExpiresIn=300 
     )

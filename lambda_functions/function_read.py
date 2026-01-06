@@ -1,5 +1,5 @@
-# this lambda will provide to the user the possibility to download recommendations and corresponding images
-# Lambda read --> read user id from jwt --> query dynamodb --> generate get presigned url --> provide both to the frontend
+# Read Lambda: returns the user's meal uploads with presigned image URLs + Bedrock analysis
+# Flow: read user id from JWT -> query DynamoDB for UPLOAD_ items -> generate presigned GET URLs -> return to frontend
 
 import boto3
 import os
@@ -12,13 +12,26 @@ dynamodb = boto3.resource("dynamodb")
 BUCKET_NAME = os.environ["UPLOADS_BUCKET"] 
 TABLE_NAME = os.environ["TABLE_NAME"]   
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Methods": "GET,OPTIONS"
+}
+
 recommendations_table = dynamodb.Table(TABLE_NAME) # in this way I leverage .resource creating an object to work on
 
 def handler(event, context):
-    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+    method = event.get("requestContext", {}).get("http", {}).get("method")
+    if method == "OPTIONS": # is a method to let browser ask permission to do this call
+        return {
+            "statusCode": 200,
+            "headers": CORS_HEADERS,
+            "body": ""
+        }
 
+    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
     PK_value = f"USER_{user_id}"
-    SK_prefix = "RECOMMENDATION_"
+    SK_prefix = "UPLOAD_"
 
     response = recommendations_table.query(     # query will give back a python dict
         KeyConditionExpression = (
@@ -31,6 +44,11 @@ def handler(event, context):
                                       # after this items becomes a list of dicts (each dict is an item)
                                       # if the list has values (items) --> rsult will be --> items = response["Items"]
                                       # in case the Key "Items" does not exists in the dict, this method will give back items = []
+
+    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+
+
+
 #visually response looks like this:
 #response = {
 #    "Items": [
@@ -100,7 +118,7 @@ def handler(event, context):
 # now I'll use for to navigate among all the items in the Items list
     results = [] #in this way if it does not exists because for example the image has been removed, the user will see null
     for item in items:  #item can be whatever, I just put item so i clearer
-        s3_key = item["s3_key"]
+        s3_key = item.get("s3Key")
         download_url = None
         if s3_key is not None and s3_key != "":
             download_url = s3.generate_presigned_url(
@@ -113,17 +131,16 @@ def handler(event, context):
             )
 
         results.append({ # results is a list of dicts (items) because each time the for goes ahead append stores one new dict per item in results, so in the end results will include all the dicts   
-            "upload_id": item.get("SK", "").replace("RECOMMENDATION_", ""),  # I need to include get in "" becasue if it is none, since I'm applying the method replace then it crashes. With replace I remove the prefix
+            "upload_id": item.get("SK", "").replace("UPLOAD_", ""),  # I need to include get in "" becasue if it is none, since I'm applying the method replace then it crashes. With replace I remove the prefix
             "createdAt": item.get("createdAt"),
             "status": item.get("status"),
-            "targets": item.get("targets"),
             "analysis": item.get("analysis"), 
-            "download_url": download_url
+            "imageUrl": download_url
         })
 
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
         "body": json.dumps({"items": results}) #I put items so it returns the value of results with more clarity, since the word results will not be included
     }    
 

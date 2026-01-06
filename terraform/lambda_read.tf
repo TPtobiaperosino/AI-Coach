@@ -4,8 +4,8 @@ resource "aws_lambda_function" "read" {
   runtime       = "python3.12"
   handler       = "function_read.handler"
 
-  filename         = "../lambda_functions/function_read.zip"                   # this says to terraform --> when you create/update the lambda use this file as code/function
-  source_code_hash = filebase64sha256("../lambda_functions/function_read.zip") # file() reads file byte per byte, sha256 produces the hash in bytes, base64 transforms bytes in string. 
+  filename         = "../lambda_functions/read.zip"                   # this says to terraform --> when you create/update the lambda use this file as code/function
+  source_code_hash = filebase64sha256("../lambda_functions/read.zip") # file() reads file byte per byte, sha256 produces the hash in bytes, base64 transforms bytes in string. 
 
   environment {
     variables = {

@@ -23,6 +23,20 @@ resource "aws_s3_bucket_public_access_block" "uploads" {
 }
 
 
+resource "aws_s3_bucket_cors_configuration" "uploads_cors" {
+  bucket = aws_s3_bucket.uploads.id
+
+  cors_rule {
+    allowed_headers = ["Content-Type", "Authorization", "x-amz-meta-*"]
+    # S3 CORS does not accept OPTIONS as an explicit allowed method; preflight OPTIONS is handled automatically.
+    allowed_methods = ["PUT", "POST", "GET", "HEAD"]
+    allowed_origins = ["http://localhost:3000"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
+
 
 # ACL = Access Control List --> who can access the bucket or an object + which permissions there are
 

@@ -21,65 +21,92 @@
 #}
 
 import boto3
-import base64
 import os
 import json
+import logging
+from urllib.parse import unquote_plus
 from boto3.dynamodb.conditions import Key
 from datetime import datetime, timezone       # I need it to identify the exact moment when the event happened --> createdAt
                                               # from the datetime module take the class datetime. the class datetime represents a specific point in the time
+from botocore.config import Config
+from botocore.exceptions import ClientError
 
 # SDK section
 s3 = boto3.client("s3")
-bedrock = boto3.client("bedrock-runtime")           # I use client when I simply need to call an API
+# Limit SDK retries so we fail fast on throttling (we handle it explicitly)
+bedrock = boto3.client(
+   "bedrock-runtime",
+   config=Config(retries={"max_attempts": 1, "mode": "standard"})
+)
 dynamodb = boto3.resource("dynamodb")               # I use resource when I need to call API but also create objects representing the resurce and operate on it
 
 BUCKET_NAME = os.environ["UPLOADS_BUCKET"]
 TABLE_NAME = os.environ["TABLE_NAME"]                               # This is just a string, is not enough in this case because I need to create an object representation of the dynamodb table and then operate on it.
+# Use original Nova Lite (not Nova 2)
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
 
 recommendations_table = dynamodb.Table(TABLE_NAME)                  # Here I use the TABLE_NAME to specify the Table im referring to and then to create an object representation of the table created in terraform
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def handler(event, context):        # In event I'll find a JSON with what happened in S3, because s3 event invoke this specific function
    upload = event["Records"][0]      # it's not compulsory, but better so I already defined the event in a variable. record because I need to access the list, but the list can include multiple events, so I want to make sure to extract only the first one that is the upload
    bucket = upload["s3"]["bucket"]["name"]  # in s3 every object is always identified by key + bucket
    s3_key = upload["s3"]["object"]["key"]
-   
-   _, user_id, upload_id_jpg = s3_key.split("/") #_ means ignore
-   upload_id = upload_id_jpg.replace(".jpg", "") # remove jpg
-   
-   s3_request = s3.get_object(Bucket = bucket, Key = s3_key)
-   image_bytes = s3_request["Body"].read() # get_object just give me back the http request, so to access the photo i need to access the body
-   image_base64 = base64.b64encode(image_bytes).decode("utf-8") # untile decode they are still bytes but cleaner, with utf i convert those bytes into a python string
 
+   # Decode URL-encoded keys to avoid NoSuchKey when S3 sends encoded keys
+   s3_key = unquote_plus(s3_key)
+   parts = s3_key.split("/")
+   if len(parts) < 2:
+       logger.error("Unexpected S3 key format: %s", s3_key)
+       raise Exception("Unexpected S3 key format")
+
+   # be robust: take the last two segments as user_id/filename
+   user_id = parts[-2]
+   filename = parts[-1]
+   upload_id, ext = os.path.splitext(filename)
+   img_format = "jpeg" if ext.lower() in [".jpg", ".jpeg"] else "png"
+
+   try:
+      s3_request = s3.get_object(Bucket=bucket, Key=s3_key)
+      image_bytes = s3_request["Body"].read()
+   except Exception as e:
+      logger.exception("Failed to get S3 object %s/%s", bucket, s3_key)
+      # Mark item as ERROR and exit (typically means the browser upload never reached S3)
+      try:
+         recommendations_table.update_item(
+            Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+            UpdateExpression="SET #s = :s, errorMessage = :e",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "ERROR", ":e": str(e)},
+         )
+      except Exception:
+         logger.exception("Failed to write ERROR status to DynamoDB for upload %s", upload_id)
+      # exit gracefully so the lambda doesn't crash repeatedly
+      return
 
    uploaded_item = recommendations_table.get_item(
       Key = {
-      "PK": f"USER_{user_id}",
-      "SK": f"UPLOAD_{upload_id}"
+         "PK": f"USER_{user_id}",
+         "SK": f"UPLOAD_{upload_id}"
       }
    )
 
    if "Item" not in uploaded_item:
-      raise Exception("Uploaded context not found in the database") # Lambda fails
-   
-   targets = uploaded_item["Item"]["targets"]
+      logger.error("Uploaded context not found in the database for user_id=%s upload_id=%s", user_id, upload_id)
+      try:
+         recommendations_table.update_item(
+            Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+            UpdateExpression="SET #s = :s, errorMessage = :e",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "ERROR", ":e": "Upload metadata not found"},
+         )
+      except Exception:
+         logger.exception("Failed to write ERROR status to DynamoDB for missing upload %s", upload_id)
+      return  # exit without raising so the invocation does not keep failing
 
-# CONSUMED SO FAR
-
-   all_recommendations = recommendations_table.query(
-     KeyConditionExpression = Key("PK").eq(f"USER_{user_id}") & Key("SK").begins_with("RECOMMENDATION_")
-  )
-
-   today = datetime.now(timezone.utc).date().isoformat()
-   total_today = {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
-
-   for item in all_recommendations["Items"]:
-    if item["createdAt"].startswith(today):
-        total_today["calories"] += item["analysis"]["meal_estimate"]["calories"]
-        total_today["protein_g"] += item["analysis"]["meal_estimate"]["protein_g"]
-        total_today["carbs_g"] += item["analysis"]["meal_estimate"]["carbs_g"]
-        total_today["fat_g"] += item["analysis"]["meal_estimate"]["fat_g"]
-
-# TRACKING UPLOAD
+   # CONSUMED SO FAR block removed per instructions
 
    recommendations_table.update_item(
       Key={       
@@ -95,159 +122,137 @@ def handler(event, context):        # In event I'll find a JSON with what happen
        ExpressionAttributeValues = {":s": "PROCESSING"}
    )
 
-   PROMPT_TEMPLATE = """
-You are a nutrition analysis and coaching assistant.
-
-You will be given:
-- An image of a single meal
-- The user's DAILY nutrition targets (calories and macros)
-- The user's total nutrition consumed so far today
-
-Your job is to:
-1. Analyze the meal shown in the image
-2. Estimate its nutritional content
-3. Evaluate the meal quality
-4. **Write a clear, direct recommendation for the user about what to eat next to reach their daily targets.**
-5. Your output MUST be a JSON object that follows the schema below, but the content (especially "next_meal_recommendation") must be written as if you are speaking directly to the user, not as a technical report.
-
-IMPORTANT RULES
-- Base your analysis ONLY on what is visible in the image.
-- If something is unclear, make a reasonable assumption and mention uncertainty.
-- Be realistic and practical. No extreme or unrealistic advice.
-- Do NOT include markdown, explanations, or extra text.
-- Output MUST be valid JSON and MUST follow the schema exactly.
-
--------------------------
-DAILY TARGETS
--------------------------
-{{daily_targets_json}}
-
--------------------------
-CONSUMED SO FAR
--------------------------
-{{consumed_so_far_json}}
-
--------------------------
-OUTPUT SCHEMA (STRICT)
--------------------------
+   PROMPT_TEMPLATE = """Return ONLY valid JSON (no markdown, no extra text) matching exactly:
 {
-"meal_estimate": {
-    "calories": number,
-    "protein_g": number,
-    "carbs_g": number,
-    "fat_g": number
-},
-"meal_score": number,
-"meal_evaluation": string,
-"next_meal_recommendation": {
-    "goal": string,
-    "suggested_foods": [string],
-    "macro_focus": string
-},
-"confidence_note": string
+  \"estimatedCalories\": number,
+  \"protein_g\": number,
+  \"carbs_g\": number,
+  \"fat_g\": number,
+  \"mealScore\": number,
+  \"summary\": string
 }
-
--------------------------
-SCORING GUIDELINES
--------------------------
-- 90-100: excellent meal quality and balance
-- 70-89: good but improvable
-- 50-69: acceptable but suboptimal
-- <50: poor nutritional quality
-
--------------------------
-NEXT MEAL LOGIC
--------------------------
-- Use the remaining daily targets to guide the recommendation
-- Suggest realistic foods someone could eat next
-- Focus on what is most missing (protein, fiber, calories, micronutrients)
-- Keep the recommendation concise, actionable, and written as if you are talking to the user
 """
 
-   prompt_text = PROMPT_TEMPLATE.replace(
-        "{{daily_targets_json}}",
-        json.dumps(targets)
-   )
+   prompt_text = PROMPT_TEMPLATE
 
-   prompt_text = prompt_text.replace(
-        "{{consumed_so_far_json}}",
-        json.dumps(total_today)
-   )  
-   
-   # ADD REPLACE FOR TOTAL UNTIL NOW
-
-   api_response = bedrock.invoke_model(
-     modelId="amazon.nova-2-lite-v1:0",
-     contentType="application/json",
-     accept="application/json",
-     body=json.dumps({
-       "messages": [
-         {
-         "role":"user",
+   messages = [
+      {
+         "role": "user",
          "content": [
-           {
-             "type":"image",
-             "source": 
-               {"type":"base64",
-               "media_type":"image/jpeg",
-               "data": image_base64}
-           },
-           {
-             "type":"text",
-             "text": prompt_text
-             }
-         ]
-         } 
-         ]
-       
-           }
-     )
-   )
+            {"image": {"format": img_format, "source": {"bytes": image_bytes}}},
+            {"text": prompt_text},
+         ],
+      }
+   ]
 
-   # bedrock sends me the answer in json but since the api request gives me back an answer via HTTP the body, to avoid loading everything in memory at once, arrives in stream of bytes
-   # with .read() reads the bytes from the stream.
-   # then json.loads transforms the bytes that include json in a python object (dict/list) 
+   output_text = ""
+   try:
+      converse_kwargs = {
+         "modelId": MODEL_ID,
+         "messages": messages,
+         "inferenceConfig": {"maxTokens": 200, "temperature": 0.1},
+      }
 
-   result = json.loads(api_response["body"].read())
+      logger.info("Invoking Bedrock model %s for upload_id=%s", MODEL_ID, upload_id)
+      api_response = bedrock.converse(**converse_kwargs)
 
-# TRACKING RECOMMENDATION
+      logger.info("Bedrock returned for upload_id=%s", upload_id)
+      usage = api_response.get("usage", {})
+      if usage:
+         logger.info(
+            "Bedrock tokens used - input: %s, output: %s",
+            usage.get("inputTokens", 0),
+            usage.get("outputTokens", 0),
+         )
+      output_message = api_response.get("output", {}).get("message", {})
+      content_blocks = output_message.get("content", [])
+      output_text = "".join(
+         block.get("text", "") for block in content_blocks if isinstance(block, dict) and block.get("text")
+      ).strip()
 
-   recommendations_table.put_item(
-        Item={
-            
-            "PK": f"USER_{user_id}",
-            "SK": f"RECOMMENDATION_{upload_id}",
+      if not output_text:
+         raise ValueError("Bedrock response contained no text content")
 
-            "s3_key": s3_key,
-            "targets": targets,
-            "analysis": result,
+      result = json.loads(output_text)
 
-            # Metadata
-            "createdAt": datetime.now(timezone.utc).isoformat(),
-            "status": "PROCESSED"
-        }
-    )
+   except json.JSONDecodeError:
+      logger.exception("Bedrock returned non-JSON response for upload_id=%s", upload_id)
+      truncated = output_text[:500] if output_text else ""
+      try:
+         recommendations_table.update_item(
+            Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+            UpdateExpression="SET #s = :s, analysis = :a",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={
+               ":s": "FAILED",
+               ":a": {"error": "Model output was not valid JSON", "rawText": truncated},
+            },
+         )
+      except Exception:
+         logger.exception("Failed to write FAILED status to DynamoDB for upload %s", upload_id)
+      return
+   except ClientError as e:
+      error_code = e.response.get("Error", {}).get("Code", "")
+      # Bedrock can return throttling for token/day or rate limits.
+      if error_code == "ThrottlingException":
+         logger.warning("Bedrock throttled for upload_id=%s: %s", upload_id, str(e))
+         try:
+            recommendations_table.update_item(
+               Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+               UpdateExpression="SET #s = :s, analysis = :a",
+               ExpressionAttributeNames={"#s": "status"},
+               ExpressionAttributeValues={
+                  ":s": "THROTTLED",
+                  ":a": {"error": "THROTTLED", "message": "Bedrock quota/rate limit reached. Try again later."},
+               },
+            )
+         except Exception:
+            logger.exception("Failed to write THROTTLED status to DynamoDB for upload %s", upload_id)
+         return
 
-# TRACKING UPLOAD
+      logger.exception("Bedrock client error for upload_id=%s", upload_id)
+      try:
+         recommendations_table.update_item(
+            Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+            UpdateExpression="SET #s = :s, analysis = :a",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "FAILED", ":a": {"error": error_code, "message": str(e)}},
+         )
+      except Exception:
+         logger.exception("Failed to write FAILED status to DynamoDB for upload %s", upload_id)
+      return
 
-   recommendations_table.update_item(
-      Key={       
-      "PK": f"USER_{user_id}",
-      "SK": f"UPLOAD_{upload_id}"
-      },
+   except Exception as e:
+      logger.exception("Bedrock invocation failed for upload_id=%s", upload_id)
+      try:
+         recommendations_table.update_item(
+            Key={"PK": f"USER_{user_id}", "SK": f"UPLOAD_{upload_id}"},
+            UpdateExpression="SET #s = :s, analysis = :a",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "FAILED", ":a": {"error": str(e)}},
+         )
+      except Exception:
+         logger.exception("Failed to write FAILED status to DynamoDB for upload %s", upload_id)
+      return
 
-# status is a reserved word in dynamodb, i cannot use it as variable, therefore I'll use an alias
-# "#" before the first letter indicates it is an alias for names/variables, ":" for values
-# I need to write this below becasue I want to update a field, not upload an actual item
+   # If result is the full model response, and you need text output from 'converse' style, adapt extraction accordingly.
+   # If 'result' contains the JSON string output, parse as needed. We'll assume the model returned JSON string in result variable when using converse.
 
-       UpdateExpression = "SET #s = :s", # it's just a remote code in the dynamodb language to say that I want to modify that field
-       ExpressionAttributeNames = {"#s": "status"},
-       ExpressionAttributeValues = {":s": "PROCESSED"}
-   )
+   try:
+      # If the result here is already the analysis dict, use it; otherwise adapt to extract the model text.
+      analysis_obj = result if isinstance(result, dict) else result
 
+      recommendations_table.update_item(
+         Key={       
+         "PK": f"USER_{user_id}",
+         "SK": f"UPLOAD_{upload_id}"
+         },
 
-
-
-
-
-
+         UpdateExpression = "SET #s = :s, analysis = :a",
+         ExpressionAttributeNames = {"#s": "status"},
+         ExpressionAttributeValues = {":s": "PROCESSED", ":a": analysis_obj}
+      )
+   except Exception:
+      logger.exception("Failed to write PROCESSED status to DynamoDB for upload %s", upload_id)
+      # do not raise further
+      return

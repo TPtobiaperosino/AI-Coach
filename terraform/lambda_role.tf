@@ -84,8 +84,26 @@ resource "aws_iam_policy" "permission_policy_lambda_bedrock_access" {
       {
         Sid      = "BedrockInvocation"
         Effect   = "Allow"
-        Action   = ["bedrock:InvokeModel"]
-        Resource = "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-2-lite-v1:0:256k"
+        Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Resource = [
+          "arn:aws:bedrock:eu-west-2::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
+          "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-pro-v1:0",
+          "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-lite-v1:0",
+        ]
+      },
+      {
+        Sid    = "MarketplaceAccess"
+        Effect = "Allow"
+        Action = [
+          "aws-marketplace:ViewSubscriptions",
+          "aws-marketplace:Subscribe"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:CalledViaLast" = "bedrock.amazonaws.com"
+          }
+        }
       }
     ]
   })
@@ -95,6 +113,7 @@ resource "aws_iam_role_policy_attachment" "lambda_bedrock_attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.permission_policy_lambda_bedrock_access.arn
 }
+
 
 # --------------------------------------------------------------
 
