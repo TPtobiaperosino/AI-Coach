@@ -48,10 +48,12 @@ export default function HomePage() {
     // saving state in browser storage (key-value)
 
     const cognitoDomain =
+      process.env.NEXT_PUBLIC_COGNITO_DOMAIN ||
       "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com";
-    const clientId = "4bno9kh90ejdpvj4kqvcjn9c8e";
+    const clientId =
+      process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "4bno9kh90ejdpvj4kqvcjn9c8e";
     const redirectUri = encodeURIComponent(
-      "http://localhost:3000/callback"
+      process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || "http://localhost:3000/callback"
     ); // must match exactly the callback URL in Cognito
     const scope = encodeURIComponent("openid email profile");
     // 
