@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///Users/tobiaperosino/Library/CloudStorage/OneDrive-OxfordBrookesUniversity/Microsoft%20Copilot%20Chat%20Files/Tech%20Projects/AI-Coach/frontend/app/page.tsx"],"sourcesContent":["import { redirect } from 'next/navigation';\n\nexport default function RootPage() {\n    redirect('/Login');\n}\n"],"names":[],"mappings":";;;;AAAA;AAAA;;AAEe,SAAS;IACpB,IAAA,iMAAQ,EAAC;AACb"}}]
-}
