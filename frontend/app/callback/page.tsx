@@ -5,16 +5,16 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 async function exchangeCodeForJWT(code: string) {
   const tokenEndpoint =
-    "https://ai-coach-user-pool-login.auth.eu-west-2.amazoncognito.com/oauth2/token";
+    "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com/oauth2/token";
 
   const body = new URLSearchParams({
     grant_type: "authorization_code",
-    client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "2g9rugh4u5nhuaer56ft2okm0",
+    client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "4bno9kh90ejdpvj4kqvcjn9c8e",
     code,
     redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || "http://localhost:3000/callback",
   });
@@ -26,14 +26,14 @@ async function exchangeCodeForJWT(code: string) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText);
+    const errorText = await response.text(); // get the error text, take everything from the response and convert it to a string
+    throw new Error(errorText); // stop the function here and throw an error
   }
 
   return response.json();
 }
 
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
@@ -80,5 +80,13 @@ export default function CallbackPage() {
     <div>
       <h1>Authenticating...</h1>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CallbackContent />
+    </Suspense>
   );
 }

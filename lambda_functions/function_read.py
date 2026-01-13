@@ -1,53 +1,6 @@
 # Read Lambda: returns the user's meal uploads with presigned image URLs + Bedrock analysis
 # Flow: read user id from JWT -> query DynamoDB for UPLOAD_ items -> generate presigned GET URLs -> return to frontend
 
-import boto3
-import os
-import json
-from boto3.dynamodb.conditions import Key # I need it to build KeyConditionExpression
-
-s3 = boto3.client("s3") 
-dynamodb = boto3.resource("dynamodb")
-
-BUCKET_NAME = os.environ["UPLOADS_BUCKET"] 
-TABLE_NAME = os.environ["TABLE_NAME"]   
-
-CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "GET,OPTIONS"
-}
-
-recommendations_table = dynamodb.Table(TABLE_NAME) # in this way I leverage .resource creating an object to work on
-
-def handler(event, context):
-    method = event.get("requestContext", {}).get("http", {}).get("method")
-    if method == "OPTIONS": # is a method to let browser ask permission to do this call
-        return {
-            "statusCode": 200,
-            "headers": CORS_HEADERS,
-            "body": ""
-        }
-
-    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
-    PK_value = f"USER_{user_id}"
-    SK_prefix = "UPLOAD_"
-
-    response = recommendations_table.query(     # query will give back a python dict
-        KeyConditionExpression = (
-            Key("PK").eq(PK_value) &
-            Key("SK").begins_with(SK_prefix)
-        )
-    )
-    
-    items = response.get("Items", []) # get is a method of dict, and what I'm doing is extarcting the list of the values belonging to the Key "Items"
-                                      # after this items becomes a list of dicts (each dict is an item)
-                                      # if the list has values (items) --> rsult will be --> items = response["Items"]
-                                      # in case the Key "Items" does not exists in the dict, this method will give back items = []
-
-    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
-
-
 
 #visually response looks like this:
 #response = {
@@ -115,7 +68,37 @@ def handler(event, context):
 #    }
 #}
 
-# now I'll use for to navigate among all the items in the Items list
+import boto3
+import os
+import json
+from boto3.dynamodb.conditions import Key # I need it to build KeyConditionExpression
+
+s3 = boto3.client("s3") 
+dynamodb = boto3.resource("dynamodb")
+
+BUCKET_NAME = os.environ["UPLOADS_BUCKET"] 
+TABLE_NAME = os.environ["TABLE_NAME"]   
+recommendations_table = dynamodb.Table(TABLE_NAME)
+
+def handler(event, context):
+    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+    PK_value = f"USER_{user_id}"
+    SK_prefix = "UPLOAD_"
+
+    response = recommendations_table.query(     # query will give back a python dict
+        KeyConditionExpression = (
+            Key("PK").eq(PK_value) &
+            Key("SK").begins_with(SK_prefix)
+        )
+    )
+    
+    items = response.get("Items", []) # get is a method of dict, and what I'm doing is extarcting the list of the values belonging to the Key "Items"
+                                      # after this items becomes a list of dicts (each dict is an item)
+                                      # if the list has values (items) --> rsult will be --> items = response["Items"]
+                                      # in case the Key "Items" does not exists in the dict, this method will give back items = []
+
+    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+    # now I'll use for to navigate among all the items in the Items list
     results = [] #in this way if it does not exists because for example the image has been removed, the user will see null
     for item in items:  #item can be whatever, I just put item so i clearer
         s3_key = item.get("s3Key")
@@ -134,14 +117,15 @@ def handler(event, context):
             "upload_id": item.get("SK", "").replace("UPLOAD_", ""),  # I need to include get in "" becasue if it is none, since I'm applying the method replace then it crashes. With replace I remove the prefix
             "createdAt": item.get("createdAt"),
             "status": item.get("status"),
-            "analysis": item.get("analysis"), 
+            "analysis": item.get("analysis"),
+            "errorMsg": item.get("errorMsg"),
             "imageUrl": download_url
         })
 
     return {
         "statusCode": 200,
-        "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
-        "body": json.dumps({"items": results}) #I put items so it returns the value of results with more clarity, since the word results will not be included
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"items": results})
     }    
 
 # what is returned to API:
@@ -152,4 +136,3 @@ def handler(event, context):
 #  ]
 # }
 # since list is not a list the container will be an object that's why items is included in {}, if I'd left just results the container would have been just a list.
-

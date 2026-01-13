@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "uploads" {
-  bucket = "s3-uploads-ai-running-coach-tobia"
+  bucket = "s3-uploads-ai-fitness-coach-tobia"
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle_uploads" {
@@ -30,7 +30,8 @@ resource "aws_s3_bucket_cors_configuration" "uploads_cors" {
     allowed_headers = ["Content-Type", "Authorization", "x-amz-meta-*"]
     # S3 CORS does not accept OPTIONS as an explicit allowed method; preflight OPTIONS is handled automatically.
     allowed_methods = ["PUT", "POST", "GET", "HEAD"]
-    allowed_origins = ["http://localhost:3000"]
+    # Allow localhost for dev and any deployed frontend origins (e.g., Amplify preview/prod).
+    allowed_origins = ["http://localhost:3000", "*"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
@@ -41,5 +42,4 @@ resource "aws_s3_bucket_cors_configuration" "uploads_cors" {
 # ACL = Access Control List --> who can access the bucket or an object + which permissions there are
 
 # Per S3 ho usato un module because I'm not just creating a bucket, I have the lifecylce rule, public access etc, so in this way I don't eed to rewrite everything each time, I can just refer to this module
-
 

@@ -29,8 +29,8 @@
 resource "aws_cognito_user_pool" "user_pool" {
   name = "ai-coach-user-pool"
 
-  username_attributes      = ["email"]  # email is the user identifier
-  auto_verified_attributes = ["email"]  # email will be auto-verified
+  username_attributes      = ["email"] # email is the user identifier
+  auto_verified_attributes = ["email"] # email will be auto-verified
 
   password_policy {
     minimum_length    = 8
@@ -83,7 +83,7 @@ resource "aws_cognito_user_pool_client" "frontend" {
 # DOMAIN
 
 resource "aws_cognito_user_pool_domain" "user_pool_domain" {
-  domain        = "ai-coach-user-pool-login"
+  domain       = "ai-fitness-coach-tobia"
   user_pool_id = aws_cognito_user_pool.user_pool.id
 
   managed_login_version = 2

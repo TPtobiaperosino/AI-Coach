@@ -3,7 +3,7 @@
 # what does "update lambda" means? --> let's say I have a lmbda already deployed, I change the function, new zip file ecc, if hash is different terraform will replace the code with the new one.
 
 resource "aws_lambda_function" "processor" {
-  function_name = "ai-coach-processor"
+  function_name = "ai-fitness-coach-processor"
   role          = aws_iam_role.lambda_role.arn
   runtime       = "python3.12"
   handler       = "function_processor.handler"
@@ -13,9 +13,9 @@ resource "aws_lambda_function" "processor" {
 
   environment {
     variables = {
-      UPLOADS_BUCKET = module.uploads_s3.bucket_name # --> I need to define this as a variable because python cannot read terraform, so at runtime level I need a way to refer to the bucket
-      TABLE_NAME     = aws_dynamodb_table.recommendations.name
-      BEDROCK_MODEL_ID = var.bedrock_model_id
+      UPLOADS_BUCKET                = module.uploads_s3.bucket_name # --> I need to define this as a variable because python cannot read terraform, so at runtime level I need a way to refer to the bucket
+      TABLE_NAME                    = aws_dynamodb_table.recommendations.name
+      BEDROCK_MODEL_ID              = var.bedrock_model_id
       BEDROCK_INFERENCE_PROFILE_ARN = var.bedrock_inference_profile_arn
     }
   }

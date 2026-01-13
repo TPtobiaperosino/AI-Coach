@@ -20,10 +20,10 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 async function exchangeCodeForJWT(code) {
-    const tokenEndpoint = "https://ai-coach-user-pool-login.auth.eu-west-2.amazoncognito.com/oauth2/token";
+    const tokenEndpoint = "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com/oauth2/token";
     const body = new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "2g9rugh4u5nhuaer56ft2okm0",
+        client_id: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "4bno9kh90ejdpvj4kqvcjn9c8e",
         code,
         redirect_uri: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || "http://localhost:3000/callback"
     });
@@ -35,19 +35,19 @@ async function exchangeCodeForJWT(code) {
         body: body.toString()
     });
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
+        const errorText = await response.text(); // get the error text, take everything from the response and convert it to a string
+        throw new Error(errorText); // stop the function here and throw an error
     }
     return response.json();
 }
-function CallbackPage() {
+function CallbackContent() {
     _s();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const searchParams = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSearchParams"])();
     const code = searchParams.get("code");
     const returnedState = searchParams.get("state");
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "CallbackPage.useEffect": ()=>{
+        "CallbackContent.useEffect": ()=>{
             const storedState = sessionStorage.getItem("oauth_state");
             if (!code) {
                 console.error("Missing authorisation code");
@@ -65,20 +65,20 @@ function CallbackPage() {
             console.log("State validated successfully");
             console.log("Authorisation code:", code);
             exchangeCodeForJWT(code).then({
-                "CallbackPage.useEffect": (tokens)=>{
+                "CallbackContent.useEffect": (tokens)=>{
                     console.log("TOKENS FROM COGNITO:", tokens);
                     if (tokens?.id_token) localStorage.setItem("id_token", tokens.id_token);
                     if (tokens?.access_token) localStorage.setItem("access_token", tokens.access_token);
                     if (tokens?.refresh_token) localStorage.setItem("refresh_token", tokens.refresh_token);
                     router.replace("/home");
                 }
-            }["CallbackPage.useEffect"]).catch({
-                "CallbackPage.useEffect": (err)=>{
+            }["CallbackContent.useEffect"]).catch({
+                "CallbackContent.useEffect": (err)=>{
                     console.error("Token exchange failed:", err);
                 }
-            }["CallbackPage.useEffect"]);
+            }["CallbackContent.useEffect"]);
         }
-    }["CallbackPage.useEffect"], [
+    }["CallbackContent.useEffect"], [
         code,
         returnedState,
         router
@@ -97,15 +97,37 @@ function CallbackPage() {
         columnNumber: 5
     }, this);
 }
-_s(CallbackPage, "8i1PHtDhDf9NMpKTkROQKKwA/RI=", false, function() {
+_s(CallbackContent, "8i1PHtDhDf9NMpKTkROQKKwA/RI=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSearchParams"]
     ];
 });
-_c = CallbackPage;
-var _c;
-__turbopack_context__.k.register(_c, "CallbackPage");
+_c = CallbackContent;
+function CallbackPage() {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Suspense"], {
+        fallback: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            children: "Loading..."
+        }, void 0, false, {
+            fileName: "[project]/app/callback/page.tsx",
+            lineNumber: 88,
+            columnNumber: 25
+        }, void 0),
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(CallbackContent, {}, void 0, false, {
+            fileName: "[project]/app/callback/page.tsx",
+            lineNumber: 89,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "[project]/app/callback/page.tsx",
+        lineNumber: 88,
+        columnNumber: 5
+    }, this);
+}
+_c1 = CallbackPage;
+var _c, _c1;
+__turbopack_context__.k.register(_c, "CallbackContent");
+__turbopack_context__.k.register(_c1, "CallbackPage");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }

@@ -25,11 +25,13 @@ resource "aws_apigatewayv2_api" "http_api" {
   cors_configuration {
     allow_origins = [
       "http://localhost:3000",
-      "https://your-frontend-domain.com"
+      "*"
     ]
-    allow_methods = ["GET", "POST", "OPTIONS"]
-    allow_headers = ["Authorization", "authorization", "Content-Type"]
-    max_age       = 3600
+    allow_methods     = ["GET", "POST", "PUT", "OPTIONS"]
+    allow_headers     = ["Authorization", "authorization", "Content-Type", "content-type"]
+    expose_headers    = ["*"]
+    allow_credentials = false
+    max_age           = 3600
   }
 }
 
@@ -56,9 +58,9 @@ resource "aws_apigatewayv2_authorizer" "cognito_jwt" {
 resource "aws_apigatewayv2_integration" "presign" {
   api_id = aws_apigatewayv2_api.http_api.id
 
-  integration_type       = "AWS_PROXY"                                   # --> means API Gateway sends the HTTP request to Lambda 
+  integration_type       = "AWS_PROXY"                            # --> means API Gateway sends the HTTP request to Lambda 
   integration_uri        = aws_lambda_function.presign.invoke_arn # means when the requests arrives, call this lambda
-  payload_format_version = "2.0"                                         # format of the event to send to lambda. 2.0 is the format to use with http requests. 1.0 with rest API
+  payload_format_version = "2.0"                                  # format of the event to send to lambda. 2.0 is the format to use with http requests. 1.0 with rest API
 }
 
 resource "aws_apigatewayv2_integration" "read" {
@@ -79,7 +81,7 @@ resource "aws_apigatewayv2_route" "presign" {
   target = "integrations/${aws_apigatewayv2_integration.presign.id}" # to who should it send the request
 
   authorization_type = "JWT"
-  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt.id
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
 resource "aws_apigatewayv2_route" "meals" {
@@ -89,7 +91,7 @@ resource "aws_apigatewayv2_route" "meals" {
   target = "integrations/${aws_apigatewayv2_integration.read.id}"
 
   authorization_type = "JWT"
-  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt.id
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
 
 #---------------------------------

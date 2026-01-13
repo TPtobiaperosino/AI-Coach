@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 # 2) GET: read
 # 3) POST: create something new
 # 4) DELETE ...
-# IMPORTANT CONCEPT: Idempotency --> an operation is idempotent if calling multiple times produces the same result. POST is tipycally idempotent becasue creates something new.
+# IMPORTANT CONCEPT: Idempotency --> an operation is idempotent if calling multiple times produces the same result. POST is tipycally not idempotent becasue creates something new.
 
 # HTTP (HyperText Transfer Protocol) REQUEST = a message sent by a client (browser, app, frontent) to a server asking it to do something
 # HTTP REQUEST = method + URL + headers (metadata about the request) + body (actual data sent)
@@ -48,7 +48,9 @@ TABLE_NAME = os.environ["TABLE_NAME"]
 recommendations_table = dynamodb.Table(TABLE_NAME)
 
 def handler(event, context):
-    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"] # all these are keys in the dict event that define the user_id from cognito
+    print(f"DEBUG: BUCKET_NAME={BUCKET_NAME}")
+    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+    print(f"DEBUG: user_id={user_id}")
 # this is the result of the authentication made by cognito and sent via api gateway. It is a data tree:
 # API gateway takes jwt from Cognito and verifies it and checks if it is valid, extracting the claims
 # requestContext includes all the other levels, authorizer same, until sub.

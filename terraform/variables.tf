@@ -11,3 +11,8 @@ variable "bedrock_inference_profile_arn" {
   type        = string
   default     = ""
 }
+variable "github_token" {
+  description = "GitHub Personal Access Token for Amplify"
+  type        = string
+  sensitive   = true
+}

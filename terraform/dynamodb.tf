@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "recommendations" {
-  name         = "ai-running-coach-recommendations"
+  name         = "ai-fitness-coach-recommendations"
   billing_mode = "PAY_PER_REQUEST" # If i don't put on-demand the standard is provisioned
 
   hash_key  = "PK"

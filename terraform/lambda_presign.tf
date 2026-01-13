@@ -4,7 +4,7 @@
 
 
 resource "aws_lambda_function" "presign" {
-  function_name = "ai-coach-presign"
+  function_name = "ai-fitness-coach-presign"
   role          = aws_iam_role.lambda_role.arn
   runtime       = "python3.12"
   handler       = "function_presign.handler"

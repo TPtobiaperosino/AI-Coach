@@ -42,10 +42,10 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navi
 ;
 ;
 async function exchangeCodeForJWT(code) {
-    const tokenEndpoint = "https://ai-coach-user-pool-login.auth.eu-west-2.amazoncognito.com/oauth2/token";
+    const tokenEndpoint = "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com/oauth2/token";
     const body = new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "2g9rugh4u5nhuaer56ft2okm0",
+        client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "4bno9kh90ejdpvj4kqvcjn9c8e",
         code,
         redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || "http://localhost:3000/callback"
     });
@@ -57,12 +57,12 @@ async function exchangeCodeForJWT(code) {
         body: body.toString()
     });
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
+        const errorText = await response.text(); // get the error text, take everything from the response and convert it to a string
+        throw new Error(errorText); // stop the function here and throw an error
     }
     return response.json();
 }
-function CallbackPage() {
+function CallbackContent() {
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
     const searchParams = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useSearchParams"])();
     const code = searchParams.get("code");
@@ -109,6 +109,26 @@ function CallbackPage() {
     }, void 0, false, {
         fileName: "[project]/app/callback/page.tsx",
         lineNumber: 80,
+        columnNumber: 5
+    }, this);
+}
+function CallbackPage() {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Suspense"], {
+        fallback: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            children: "Loading..."
+        }, void 0, false, {
+            fileName: "[project]/app/callback/page.tsx",
+            lineNumber: 88,
+            columnNumber: 25
+        }, void 0),
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(CallbackContent, {}, void 0, false, {
+            fileName: "[project]/app/callback/page.tsx",
+            lineNumber: 89,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "[project]/app/callback/page.tsx",
+        lineNumber: 88,
         columnNumber: 5
     }, this);
 }

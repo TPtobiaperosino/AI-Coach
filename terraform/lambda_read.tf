@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "read" {
-  function_name = "ai-coach-read"
+  function_name = "ai-fitness-coach-read"
   role          = aws_iam_role.lambda_role.arn
   runtime       = "python3.12"
   handler       = "function_read.handler"

@@ -39,492 +39,360 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navi
 ;
 function HomePage() {
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
-    const API_BASE = ("TURBOPACK compile-time value", "https://36woq2hrwl.execute-api.eu-west-2.amazonaws.com");
+    const API_BASE = ("TURBOPACK compile-time value", "https://gw4z6ahlf6.execute-api.eu-west-2.amazonaws.com");
+    // State Management
     const [file, setFile] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [status, setStatus] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [meals, setMeals] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [busy, setBusy] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
-    const token = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
-        // Prefer access token if present; fallback to id token.
-        return localStorage.getItem("access_token") || localStorage.getItem("id_token") || "";
-    }, []);
+    const [token, setToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [isLoading, setIsLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
+    // Get Auth Token from LocalStorage on client side
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        if (!token) {
-            router.replace("/");
-            return;
+        const accessToken = localStorage.getItem("access_token");
+        const idToken = localStorage.getItem("id_token");
+        const foundToken = accessToken || idToken || null;
+        setToken(foundToken);
+        setIsLoading(false);
+        if (!foundToken) {
+            router.replace("/Login");
         }
-        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-        ;
     }, [
-        router,
-        token,
-        API_BASE
+        router
     ]);
+    // --- ACTIONS ---
     async function handleUpload() {
+        if (!file) return setStatus("Pick a file first");
+        console.log("Token:", token);
+        console.log("API_BASE:", API_BASE);
+        if (!token) {
+            setStatus("No auth token found. Please login again.");
+            return;
+        }
         if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
         ;
-        if (!token) {
-            setStatus("Missing auth token. Please login again.");
-            router.replace("/");
-            return;
-        }
-        if (!file) {
-            setStatus("Pick an image first.");
-            return;
-        }
         try {
             setBusy(true);
-            setStatus("Requesting upload URL...");
-            // 1) Ask backend for presigned PUT URL
-            const presignRes = await fetch(`${API_BASE}/presign`, {
+            setStatus("Step 1: Getting Presigned URL...");
+            const url = `${API_BASE}/presign`;
+            console.log("Fetching URL:", url);
+            // 1. Get Presigned URL from Lambda Presign
+            const res = await fetch(url, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    contentType: file.type || "image/jpeg"
+                    contentType: file.type
                 })
             });
-            if (!presignRes.ok) {
-                const text = await presignRes.text();
-                throw new Error(`Presign failed (${presignRes.status}): ${text}`);
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Failed to get presigned URL: ${res.status} ${errorText}`);
             }
-            const presignJson = await presignRes.json();
-            const uploadUrl = presignJson.uploadUrl;
-            const s3Key = presignJson.s3Key;
-            const uploadId = presignJson.uploadId;
-            if (!uploadUrl || !s3Key || !uploadId) {
-                throw new Error(`Presign response missing fields. Got: ${JSON.stringify(presignJson)}`);
-            }
-            // 2) Upload directly to S3
-            setStatus("Uploading to S3...");
-            const putRes = await fetch(uploadUrl, {
+            const { uploadUrl, uploadId } = await res.json();
+            setStatus("Step 2: Uploading directly to S3...");
+            // 2. Upload File directly to S3 using PUT
+            await fetch(uploadUrl, {
                 method: "PUT",
                 headers: {
-                    "Content-Type": file.type || "image/jpeg"
+                    "Content-Type": file.type
                 },
                 body: file
             });
-            if (!putRes.ok) {
-                throw new Error(`S3 upload failed (${putRes.status}).`);
-            }
-            setStatus(`Uploaded ✅ (uploadId=${uploadId}). Processing...`);
-            // Optional: immediately refresh meals list (processor is async, so status may still be UPLOADING/PROCESSING)
-            await refreshMeals();
+            setStatus(`Success! ID: ${uploadId}. Click Refresh to see results.`);
+            setFile(null);
         } catch (err) {
-            setStatus(err?.message || "Upload failed.");
+            const errorMessage = err?.message || String(err);
+            setStatus(`Upload failed: ${errorMessage}`);
+            console.error("Full error:", err);
+            console.error("Error name:", err?.name);
+            console.error("Error message:", err?.message);
         } finally{
             setBusy(false);
         }
     }
     async function refreshMeals() {
-        if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
-        ;
-        if (!token) {
-            setStatus("Missing auth token. Please login again.");
-            router.replace("/");
-            return;
-        }
         try {
             setBusy(true);
-            setStatus("Refreshing meals...");
+            setStatus("Fetching meals...");
+            // Call Lambda Read
             const res = await fetch(`${API_BASE}/meals`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`GET /meals failed (${res.status}): ${text}`);
-            }
-            const json = await res.json();
-            const items = Array.isArray(json.items) ? json.items : [];
-            setMeals(items);
-            setStatus(`Loaded ${items.length} meal(s).`);
+            const data = await res.json();
+            setMeals(data.items || []);
+            setStatus(`Loaded ${data.items?.length || 0} meals`);
         } catch (err) {
-            setStatus(err?.message || "Refresh failed.");
+            setStatus("Refresh failed.");
         } finally{
             setBusy(false);
         }
     }
-    function handleLogout() {
-        localStorage.removeItem("id_token");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        router.replace("/");
+    // Show loading while checking auth
+    if (isLoading) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            style: {
+                textAlign: "center",
+                marginTop: 100
+            },
+            children: "Loading..."
+        }, void 0, false, {
+            fileName: "[project]/app/home/page.tsx",
+            lineNumber: 115,
+            columnNumber: 12
+        }, this);
     }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         style: {
-            maxWidth: 900,
-            margin: "40px auto",
-            padding: 16
+            maxWidth: 800,
+            margin: "50px auto",
+            fontFamily: "sans-serif"
         },
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                children: "Home"
+                children: "AI Meal Coach - Dashboard"
             }, void 0, false, {
                 fileName: "[project]/app/home/page.tsx",
-                lineNumber: 168,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                children: "MVP: upload a meal photo → Bedrock estimates calories/macros and scores the meal."
-            }, void 0, false, {
-                fileName: "[project]/app/home/page.tsx",
-                lineNumber: 169,
+                lineNumber: 120,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                    flexWrap: "wrap"
+                    background: "#f4f4f4",
+                    padding: 20,
+                    borderRadius: 10
                 },
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                         type: "file",
-                        accept: "image/*",
-                        onChange: (e)=>setFile(e.target.files?.[0] ?? null)
+                        onChange: (e)=>setFile(e.target.files?.[0] || null)
                     }, void 0, false, {
                         fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 172,
+                        lineNumber: 124,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         onClick: handleUpload,
-                        disabled: !file || busy,
-                        children: "Upload meal"
+                        disabled: busy || !file,
+                        children: "Upload Photo"
                     }, void 0, false, {
                         fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 177,
+                        lineNumber: 125,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         onClick: refreshMeals,
                         disabled: busy,
-                        children: "Refresh meals"
+                        children: "Refresh List"
                     }, void 0, false, {
                         fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 180,
+                        lineNumber: 126,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        onClick: handleLogout,
-                        disabled: busy,
+                        onClick: ()=>{
+                            localStorage.clear();
+                            router.push("/");
+                        },
                         children: "Logout"
                     }, void 0, false, {
                         fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 183,
+                        lineNumber: 127,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                children: "Status:"
+                            }, void 0, false, {
+                                fileName: "[project]/app/home/page.tsx",
+                                lineNumber: 128,
+                                columnNumber: 12
+                            }, this),
+                            " ",
+                            status
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/home/page.tsx",
+                        lineNumber: 128,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/home/page.tsx",
-                lineNumber: 171,
+                lineNumber: 123,
                 columnNumber: 7
             }, this),
-            status ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                style: {
-                    marginTop: 12
-                },
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                        children: "Status:"
-                    }, void 0, false, {
-                        fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 190,
-                        columnNumber: 11
-                    }, this),
-                    " ",
-                    status
-                ]
-            }, void 0, true, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("hr", {}, void 0, false, {
                 fileName: "[project]/app/home/page.tsx",
-                lineNumber: 189,
-                columnNumber: 9
-            }, this) : null,
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("hr", {
-                style: {
-                    margin: "24px 0"
-                }
-            }, void 0, false, {
-                fileName: "[project]/app/home/page.tsx",
-                lineNumber: 194,
+                lineNumber: 131,
                 columnNumber: 7
             }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                children: "Meals"
-            }, void 0, false, {
-                fileName: "[project]/app/home/page.tsx",
-                lineNumber: 196,
-                columnNumber: 7
-            }, this),
-            meals.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                children: "No meals yet. Upload one, then click Refresh."
-            }, void 0, false, {
-                fileName: "[project]/app/home/page.tsx",
-                lineNumber: 198,
-                columnNumber: 9
-            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
                     display: "grid",
-                    gap: 16
+                    gap: 20
                 },
-                children: meals.map((m, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                children: meals.map((m, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
+                            display: "flex",
+                            gap: 20,
                             border: "1px solid #ddd",
-                            borderRadius: 8,
-                            padding: 12
+                            padding: 15,
+                            borderRadius: 8
                         },
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            style: {
-                                display: "flex",
-                                gap: 16,
-                                alignItems: "flex-start"
-                            },
-                            children: [
-                                m.imageUrl ? // eslint-disable-next-line @next/next/no-img-element
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                    src: m.imageUrl,
-                                    alt: "meal",
-                                    style: {
-                                        width: 180,
-                                        height: 180,
-                                        objectFit: "cover",
-                                        borderRadius: 8
-                                    }
-                                }, void 0, false, {
-                                    fileName: "[project]/app/home/page.tsx",
-                                    lineNumber: 209,
-                                    columnNumber: 19
-                                }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    style: {
-                                        width: 180,
-                                        height: 180,
-                                        borderRadius: 8,
-                                        background: "#f5f5f5",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "#666"
-                                    },
-                                    children: "No image"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/home/page.tsx",
-                                    lineNumber: 215,
-                                    columnNumber: 19
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    style: {
-                                        flex: 1
-                                    },
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                    children: "upload_id:"
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                src: m.imageUrl,
+                                alt: "meal",
+                                style: {
+                                    width: 150,
+                                    height: 150,
+                                    objectFit: "cover",
+                                    borderRadius: 5
+                                }
+                            }, void 0, false, {
+                                fileName: "[project]/app/home/page.tsx",
+                                lineNumber: 137,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                        children: [
+                                            "Status: ",
+                                            m.status
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/home/page.tsx",
+                                        lineNumber: 139,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        children: [
+                                            "Created: ",
+                                            new Date(m.createdAt).toLocaleString()
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/home/page.tsx",
+                                        lineNumber: 140,
+                                        columnNumber: 15
+                                    }, this),
+                                    m.analysis ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        style: {
+                                            background: "#eeffee",
+                                            padding: 10
+                                        },
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                                        children: "Calories:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/home/page.tsx",
+                                                        lineNumber: 143,
+                                                        columnNumber: 22
+                                                    }, this),
+                                                    " ",
+                                                    m.analysis.estimatedCalories,
+                                                    " kcal"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/home/page.tsx",
+                                                lineNumber: 143,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                                        children: "Macros:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/home/page.tsx",
+                                                        lineNumber: 144,
+                                                        columnNumber: 22
+                                                    }, this),
+                                                    " P:",
+                                                    m.analysis.protein_g,
+                                                    "g | C:",
+                                                    m.analysis.carbs_g,
+                                                    "g | F:",
+                                                    m.analysis.fat_g,
+                                                    "g"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/home/page.tsx",
+                                                lineNumber: 144,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                                        children: "Score:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/home/page.tsx",
+                                                        lineNumber: 145,
+                                                        columnNumber: 22
+                                                    }, this),
+                                                    " ",
+                                                    m.analysis.mealScore,
+                                                    "/10"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/home/page.tsx",
+                                                lineNumber: 145,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
+                                                    children: m.analysis.summary
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 233,
-                                                    columnNumber: 21
-                                                }, this),
-                                                " ",
-                                                m.upload_id
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/home/page.tsx",
-                                            lineNumber: 232,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                    children: "createdAt:"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 236,
-                                                    columnNumber: 21
-                                                }, this),
-                                                " ",
-                                                m.createdAt
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/home/page.tsx",
-                                            lineNumber: 235,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                    children: "status:"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 239,
-                                                    columnNumber: 21
-                                                }, this),
-                                                " ",
-                                                m.status
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/home/page.tsx",
-                                            lineNumber: 238,
-                                            columnNumber: 19
-                                        }, this),
-                                        m.analysis ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            style: {
-                                                marginTop: 8
-                                            },
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "estimatedCalories:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 245,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.estimatedCalories
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 244,
-                                                    columnNumber: 23
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "protein_g:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 248,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.protein_g,
-                                                        " | ",
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "carbs_g:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 248,
-                                                            columnNumber: 78
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.carbs_g,
-                                                        " | ",
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "fat_g:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 249,
-                                                            columnNumber: 48
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.fat_g
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 247,
-                                                    columnNumber: 23
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "mealScore:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 252,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.mealScore
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 251,
-                                                    columnNumber: 23
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "summary:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 255,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.summary
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 254,
-                                                    columnNumber: 23
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
-                                                            children: "confidenceNote:"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/home/page.tsx",
-                                                            lineNumber: 258,
-                                                            columnNumber: 25
-                                                        }, this),
-                                                        " ",
-                                                        m.analysis.confidenceNote
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/home/page.tsx",
-                                                    lineNumber: 257,
-                                                    columnNumber: 23
+                                                    lineNumber: 146,
+                                                    columnNumber: 22
                                                 }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/app/home/page.tsx",
-                                            lineNumber: 243,
-                                            columnNumber: 21
-                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            style: {
-                                                marginTop: 8,
-                                                color: "#666"
-                                            },
-                                            children: "No analysis yet."
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/home/page.tsx",
-                                            lineNumber: 262,
-                                            columnNumber: 21
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/home/page.tsx",
-                                    lineNumber: 231,
-                                    columnNumber: 17
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/app/home/page.tsx",
-                            lineNumber: 206,
-                            columnNumber: 15
-                        }, this)
-                    }, `${m.upload_id ?? "noid"}-${idx}`, false, {
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/home/page.tsx",
+                                                lineNumber: 146,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/home/page.tsx",
+                                        lineNumber: 142,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        children: "Analysis in progress..."
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/home/page.tsx",
+                                        lineNumber: 148,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/home/page.tsx",
+                                lineNumber: 138,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, i, true, {
                         fileName: "[project]/app/home/page.tsx",
-                        lineNumber: 202,
-                        columnNumber: 13
+                        lineNumber: 136,
+                        columnNumber: 11
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/app/home/page.tsx",
-                lineNumber: 200,
-                columnNumber: 9
+                lineNumber: 134,
+                columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/home/page.tsx",
-        lineNumber: 167,
+        lineNumber: 119,
         columnNumber: 5
     }, this);
 }
