@@ -12,11 +12,16 @@ async function exchangeCodeForJWT(code: string) {
   const tokenEndpoint =
     "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com/oauth2/token";
 
+  const runtimeRedirect =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/callback`
+      : "http://localhost:3000/callback";
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || "4bno9kh90ejdpvj4kqvcjn9c8e",
     code,
-    redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || "http://localhost:3000/callback",
+    redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI || runtimeRedirect,
   });
 
   const response = await fetch(tokenEndpoint, {
