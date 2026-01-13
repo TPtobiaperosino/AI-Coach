@@ -87,7 +87,7 @@ function CallbackContent() {
         <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, background: "rgba(124, 58, 237, 0.12)", color: "#a855f7", fontWeight: 700, letterSpacing: 0.3, marginBottom: 12 }}>
           Authenticating...
         </div>
-        <p style={{ margin: 0, color: "#94a3b8" }}>We’re exchanging your code for tokens. Hang tight.</p>
+        <p style={{ margin: 0, color: "#94a3b8" }}>Loading...</p>
       </div>
     </div>
   );
@@ -95,7 +95,7 @@ function CallbackContent() {
 
 export default function CallbackPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>We are loading you profile :)</div>}>
       <CallbackContent />
     </Suspense>
   );

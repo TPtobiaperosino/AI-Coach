@@ -76,7 +76,7 @@ export default function HomePage() {
           <span role="img" aria-label="sparkles">✨</span> AI Meal Coach
         </div>
         <h1 style={{ margin: "14px 0 8px", fontSize: 30, letterSpacing: -0.4 }}>Welcome back</h1>
-        <p style={{ margin: "0 0 20px", color: "#94a3b8" }}>Log in with your Cognito account to upload meals and get instant nutrition insights.</p>
+        <p style={{ margin: "0 0 20px", color: "#94a3b8" }}>Log in with your account to upload meals and get instant nutrition insights.</p>
         <button
           onClick={handleLogin}
           style={{
@@ -92,7 +92,7 @@ export default function HomePage() {
             transition: "transform 0.1s ease",
           }}
         >
-          Continue with Cognito
+          Log in
         </button>
       </div>
     </div>
