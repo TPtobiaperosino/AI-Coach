@@ -15,6 +15,39 @@ export default function HomePage() {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const colors = {
+    bg: "linear-gradient(135deg, #0f172a 0%, #0b1220 50%, #0f172a 100%)",
+    card: "rgba(255,255,255,0.04)",
+    border: "rgba(255,255,255,0.08)",
+    accent: "#7c3aed",
+    accentSoft: "rgba(124, 58, 237, 0.12)",
+    text: "#e2e8f0",
+    muted: "#94a3b8",
+  };
+
+  const buttonBase: React.CSSProperties = {
+    borderRadius: 12,
+    padding: "10px 16px",
+    border: "1px solid " + colors.border,
+    background: colors.card,
+    color: colors.text,
+    cursor: "pointer",
+    fontWeight: 600,
+    transition: "all 0.2s ease",
+  };
+
+  const primaryButton: React.CSSProperties = {
+    ...buttonBase,
+    background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+    border: "none",
+    boxShadow: "0 10px 30px rgba(124,58,237,0.35)",
+  };
+
+  const subtleButton: React.CSSProperties = {
+    ...buttonBase,
+    background: "rgba(255,255,255,0.06)",
+  };
+
   // Get Auth Token from LocalStorage on client side
   useEffect(() => {
     const accessToken = localStorage.getItem("access_token");
@@ -116,40 +149,209 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: "50px auto", fontFamily: "sans-serif" }}>
-      <h1>AI Meal Coach - Dashboard</h1>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: colors.bg,
+        color: colors.text,
+        fontFamily: "'DM Sans', 'Inter', system-ui, -apple-system, sans-serif",
+        padding: "40px 16px",
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 24,
+            gap: 16,
+          }}
+        >
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, background: colors.accentSoft, color: colors.accent, fontWeight: 700, letterSpacing: 0.3 }}>
+              <span role="img" aria-label="sparkles">✨</span> AI Meal Coach
+            </div>
+            <h1 style={{ margin: "12px 0 4px", fontSize: 32, letterSpacing: -0.4 }}>Il tuo diario smart dei pasti</h1>
+            <p style={{ color: colors.muted, margin: 0 }}>Carica le foto, ottieni analisi nutrizionali e segui i progressi.</p>
+          </div>
+          <button
+            style={subtleButton}
+            onClick={() => {
+              localStorage.clear();
+              router.push("/");
+            }}
+          >
+            Logout
+          </button>
+        </header>
 
-      {/* Upload Section */}
-      <div style={{ background: "#f4f4f4", padding: 20, borderRadius: 10 }}>
-        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-        <button onClick={handleUpload} disabled={busy || !file}>Upload Photo</button>
-        <button onClick={refreshMeals} disabled={busy}>Refresh List</button>
-        <button onClick={() => { localStorage.clear(); router.push("/"); }}>Logout</button>
-        <p><strong>Status:</strong> {status}</p>
-      </div>
-
-      <hr />
-
-      {/* Meals List */}
-      <div style={{ display: "grid", gap: 20 }}>
-        {meals.map((m, i) => (
-          <div key={i} style={{ display: "flex", gap: 20, border: "1px solid #ddd", padding: 15, borderRadius: 8 }}>
-            <img src={m.imageUrl} alt="meal" style={{ width: 150, height: 150, objectFit: "cover", borderRadius: 5 }} />
-            <div>
-              <h3>Status: {m.status}</h3>
-              {m.errorMsg && <p style={{ color: "red" }}>Error: {m.errorMsg}</p>}
-              <p>Created: {new Date(m.createdAt).toLocaleString()}</p>
-              {m.analysis ? (
-                <div style={{ background: "#eeffee", padding: 10 }}>
-                  <p><strong>Calories:</strong> {m.analysis.estimatedCalories} kcal</p>
-                  <p><strong>Macros:</strong> P:{m.analysis.protein_g}g | C:{m.analysis.carbs_g}g | F:{m.analysis.fat_g}g</p>
-                  <p><strong>Score:</strong> {m.analysis.mealScore}/10</p>
-                  <p><i>{m.analysis.summary}</i></p>
-                </div>
-              ) : <p>Analysis in progress...</p>}
+        {/* Upload + Status */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr 0.9fr",
+            gap: 20,
+            marginBottom: 28,
+          }}
+        >
+          <div
+            style={{
+              background: colors.card,
+              border: "1px solid " + colors.border,
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 12px 50px rgba(0,0,0,0.35)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Carica un pasto</h3>
+            <p style={{ margin: "0 0 12px", color: colors.muted, fontSize: 14 }}>
+              Foto nitida, piatto ben visibile. Formati supportati: JPEG/PNG.
+            </p>
+            <label
+              style={{
+                display: "block",
+                padding: "14px",
+                borderRadius: 14,
+                border: "1px dashed " + colors.border,
+                background: "rgba(255,255,255,0.02)",
+                marginBottom: 12,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                style={{ display: "none" }}
+              />
+              <span style={{ color: file ? colors.text : colors.muted }}>
+                {file ? file.name : "Trascina o seleziona una foto"}
+              </span>
+            </label>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button style={primaryButton} onClick={handleUpload} disabled={busy || !file}>
+                {busy ? "In corso..." : "Carica foto"}
+              </button>
+              <button style={subtleButton} onClick={refreshMeals} disabled={busy}>
+                Aggiorna elenco
+              </button>
             </div>
           </div>
-        ))}
+
+          <div
+            style={{
+              background: colors.card,
+              border: "1px solid " + colors.border,
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 12px 50px rgba(0,0,0,0.35)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Stato</h3>
+            <p style={{ margin: 0, color: colors.text, fontWeight: 600 }}>{status || "Pronto a caricare"}</p>
+          </div>
+        </div>
+
+        {/* Meals List */}
+        <div style={{ display: "grid", gap: 16 }}>
+          {meals.map((m, i) => (
+            <div
+              key={i}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "140px 1fr",
+                gap: 16,
+                border: "1px solid " + colors.border,
+                padding: 16,
+                borderRadius: 16,
+                background: "rgba(255,255,255,0.03)",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: 140,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  border: "1px solid " + colors.border,
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              >
+                {m.imageUrl ? (
+                  <img
+                    src={m.imageUrl}
+                    alt="meal"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                ) : (
+                  <div style={{ color: colors.muted, fontSize: 12, textAlign: "center", paddingTop: 52 }}>
+                    In elaborazione...
+                  </div>
+                )}
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      background: colors.accentSoft,
+                      color: colors.accent,
+                      fontWeight: 700,
+                      fontSize: 12,
+                    }}
+                  >
+                    {m.status}
+                  </span>
+                  {m.errorMsg && <span style={{ color: "#f87171", fontSize: 12 }}>Errore: {m.errorMsg}</span>}
+                </div>
+                <p style={{ margin: "0 0 8px", color: colors.muted, fontSize: 13 }}>
+                  Creato: {new Date(m.createdAt).toLocaleString()}
+                </p>
+                {m.analysis ? (
+                  <div
+                    style={{
+                      background: "rgba(16, 185, 129, 0.08)",
+                      border: "1px solid rgba(16, 185, 129, 0.25)",
+                      borderRadius: 12,
+                      padding: 12,
+                      color: colors.text,
+                    }}
+                  >
+                    <p style={{ margin: 0 }}>
+                      <strong>Calories:</strong> {m.analysis.estimatedCalories} kcal
+                    </p>
+                    <p style={{ margin: "6px 0" }}>
+                      <strong>Macros:</strong> P:{m.analysis.protein_g}g | C:{m.analysis.carbs_g}g | F:{m.analysis.fat_g}g
+                    </p>
+                    <p style={{ margin: "6px 0" }}>
+                      <strong>Score:</strong> {m.analysis.mealScore}/10
+                    </p>
+                    <p style={{ margin: "6px 0", color: colors.muted }}>{m.analysis.summary}</p>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: colors.muted }}>Analisi in corso...</p>
+                )}
+              </div>
+            </div>
+          ))}
+          {meals.length === 0 && (
+            <div
+              style={{
+                border: "1px dashed " + colors.border,
+                padding: 16,
+                borderRadius: 14,
+                color: colors.muted,
+                textAlign: "center",
+              }}
+            >
+              Nessun pasto ancora. Carica una foto per iniziare.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
