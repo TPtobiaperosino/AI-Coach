@@ -72,8 +72,17 @@ import boto3
 import os
 import json
 from boto3.dynamodb.conditions import Key # I need it to build KeyConditionExpression
+from botocore.config import Config
 
-s3 = boto3.client("s3") 
+AWS_REGION = os.environ.get("AWS_REGION", "eu-west-2")
+
+# Force region-specific endpoint to avoid redirects that can break CORS with browsers.
+s3 = boto3.client(
+    "s3",
+    region_name=AWS_REGION,
+    endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
+    config=Config(signature_version="s3v4")
+) 
 dynamodb = boto3.resource("dynamodb")
 
 BUCKET_NAME = os.environ["UPLOADS_BUCKET"] 
