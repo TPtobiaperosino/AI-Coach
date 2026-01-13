@@ -306,7 +306,7 @@ export default function HomePage() {
                   >
                     {m.status}
                   </span>
-                  {m.errorMsg && <span style={{ color: "#f87171", fontSize: 12 }}>Errore: {m.errorMsg}</span>}
+                  {m.errorMsg && <span style={{ color: "#f87171", fontSize: 12 }}>Error: {m.errorMsg}</span>}
                 </div>
                 <p style={{ margin: "0 0 8px", color: colors.muted, fontSize: 13 }}>
                   Creato: {new Date(m.createdAt).toLocaleString()}
@@ -333,7 +333,7 @@ export default function HomePage() {
                     <p style={{ margin: "6px 0", color: colors.muted }}>{m.analysis.summary}</p>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, color: colors.muted }}>Analisi in corso...</p>
+                  <p style={{ margin: 0, color: colors.muted }}>Analysis in progress...</p>
                 )}
               </div>
             </div>
