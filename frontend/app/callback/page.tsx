@@ -82,8 +82,13 @@ function CallbackContent() {
   }, [code, returnedState, router]);
 
   return (
-    <div>
-      <h1>Authenticating...</h1>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0f172a, #111827)", color: "#e2e8f0", fontFamily: "'DM Sans', 'Inter', system-ui, -apple-system, sans-serif", padding: 24 }}>
+      <div style={{ maxWidth: 420, width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 24, boxShadow: "0 18px 60px rgba(0,0,0,0.4)", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, background: "rgba(124, 58, 237, 0.12)", color: "#a855f7", fontWeight: 700, letterSpacing: 0.3, marginBottom: 12 }}>
+          Authenticating...
+        </div>
+        <p style={{ margin: 0, color: "#94a3b8" }}>We’re exchanging your code for tokens. Hang tight.</p>
+      </div>
     </div>
   );
 }

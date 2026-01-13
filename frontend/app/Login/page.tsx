@@ -69,9 +69,32 @@ export default function HomePage() {
     // browser redirect to Cognito Hosted UI
   }
 
-  return (
-    <div>
-      <button onClick={handleLogin}>Login</button>
+    return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0f172a 0%, #111827 50%, #0f172a 100%)", color: "#e2e8f0", fontFamily: "'DM Sans', 'Inter', system-ui, -apple-system, sans-serif", padding: 24 }}>
+      <div style={{ width: "100%", maxWidth: 520, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 28, boxShadow: "0 18px 60px rgba(0,0,0,0.4)" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, background: "rgba(124, 58, 237, 0.12)", color: "#a855f7", fontWeight: 700, letterSpacing: 0.3 }}>
+          <span role="img" aria-label="sparkles">✨</span> AI Meal Coach
+        </div>
+        <h1 style={{ margin: "14px 0 8px", fontSize: 30, letterSpacing: -0.4 }}>Welcome back</h1>
+        <p style={{ margin: "0 0 20px", color: "#94a3b8" }}>Log in with your Cognito account to upload meals and get instant nutrition insights.</p>
+        <button
+          onClick={handleLogin}
+          style={{
+            width: "100%",
+            border: "none",
+            borderRadius: 12,
+            padding: "14px 16px",
+            background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+            color: "#fff",
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow: "0 14px 40px rgba(124,58,237,0.35)",
+            transition: "transform 0.1s ease",
+          }}
+        >
+          Continue with Cognito
+        </button>
+      </div>
     </div>
   );
 }

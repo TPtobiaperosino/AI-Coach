@@ -172,8 +172,8 @@ export default function HomePage() {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 999, background: colors.accentSoft, color: colors.accent, fontWeight: 700, letterSpacing: 0.3 }}>
               <span role="img" aria-label="sparkles">✨</span> AI Meal Coach
             </div>
-            <h1 style={{ margin: "12px 0 4px", fontSize: 32, letterSpacing: -0.4 }}>Il tuo diario smart dei pasti</h1>
-            <p style={{ color: colors.muted, margin: 0 }}>Carica le foto, ottieni analisi nutrizionali e segui i progressi.</p>
+            <h1 style={{ margin: "12px 0 4px", fontSize: 32, letterSpacing: -0.4 }}>Your smart meal log</h1>
+            <p style={{ color: colors.muted, margin: 0 }}>Upload photos, get nutrition insights, track your progress.</p>
           </div>
           <button
             style={subtleButton}
@@ -204,9 +204,9 @@ export default function HomePage() {
               boxShadow: "0 12px 50px rgba(0,0,0,0.35)",
             }}
           >
-            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Carica un pasto</h3>
+            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Upload a meal</h3>
             <p style={{ margin: "0 0 12px", color: colors.muted, fontSize: 14 }}>
-              Foto nitida, piatto ben visibile. Formati supportati: JPEG/PNG.
+              Clear photo, plate visible. Supported formats: JPEG/PNG.
             </p>
             <label
               style={{
@@ -226,15 +226,15 @@ export default function HomePage() {
                 style={{ display: "none" }}
               />
               <span style={{ color: file ? colors.text : colors.muted }}>
-                {file ? file.name : "Trascina o seleziona una foto"}
+                {file ? file.name : "Drag & drop or pick a photo"}
               </span>
             </label>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button style={primaryButton} onClick={handleUpload} disabled={busy || !file}>
-                {busy ? "In corso..." : "Carica foto"}
+                {busy ? "Working..." : "Upload photo"}
               </button>
               <button style={subtleButton} onClick={refreshMeals} disabled={busy}>
-                Aggiorna elenco
+                Refresh list
               </button>
             </div>
           </div>
@@ -248,8 +248,8 @@ export default function HomePage() {
               boxShadow: "0 12px 50px rgba(0,0,0,0.35)",
             }}
           >
-            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Stato</h3>
-            <p style={{ margin: 0, color: colors.text, fontWeight: 600 }}>{status || "Pronto a caricare"}</p>
+            <h3 style={{ margin: "0 0 12px", letterSpacing: -0.2 }}>Status</h3>
+            <p style={{ margin: 0, color: colors.text, fontWeight: 600 }}>{status || "Ready to upload"}</p>
           </div>
         </div>
 
@@ -287,7 +287,7 @@ export default function HomePage() {
                   />
                 ) : (
                   <div style={{ color: colors.muted, fontSize: 12, textAlign: "center", paddingTop: 52 }}>
-                    In elaborazione...
+                    Processing...
                   </div>
                 )}
               </div>
