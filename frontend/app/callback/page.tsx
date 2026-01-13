@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 async function exchangeCodeForJWT(code: string) {
   const tokenEndpoint =
+    process.env.NEXT_PUBLIC_COGNITO_DOMAIN?.replace(/\/$/, "")?.concat("/oauth2/token") ||
     "https://ai-fitness-coach-tobia.auth.eu-west-2.amazoncognito.com/oauth2/token";
 
   const runtimeRedirect =
