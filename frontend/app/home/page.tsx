@@ -348,7 +348,7 @@ export default function HomePage() {
                 textAlign: "center",
               }}
             >
-              Nessun pasto ancora. Carica una foto per iniziare.
+              No meals yet. Upload a photo to get started.
             </div>
           )}
         </div>
