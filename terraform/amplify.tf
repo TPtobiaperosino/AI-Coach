@@ -26,7 +26,9 @@ resource "aws_amplify_app" "frontend" {
 
   # Environment variables for the build process
   environment_variables = {
-    NEXT_PUBLIC_API_BASE = aws_apigatewayv2_api.http_api.api_endpoint
+    NEXT_PUBLIC_API_BASE       = aws_apigatewayv2_api.http_api.api_endpoint
+    AMPLIFY_MONOREPO_APP_ROOT  = "frontend"
+    NODE_VERSION               = "20"
   }
 
   access_token = var.github_token
