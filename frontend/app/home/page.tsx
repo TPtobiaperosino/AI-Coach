@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
@@ -14,6 +14,7 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const colors = {
     bg: "linear-gradient(135deg, #0f172a 0%, #0b1220 50%, #0f172a 100%)",
@@ -64,7 +65,11 @@ export default function HomePage() {
   // --- ACTIONS ---
 
   async function handleUpload() {
-    if (!file) return setStatus("Pick a file first");
+    if (!file) {
+      setStatus("Pick a file first");
+      fileInputRef.current?.click();
+      return;
+    }
 
     console.log("Token:", token);
     console.log("API_BASE:", API_BASE);
@@ -220,6 +225,7 @@ export default function HomePage() {
               }}
             >
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
@@ -230,8 +236,12 @@ export default function HomePage() {
               </span>
             </label>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button style={primaryButton} onClick={handleUpload} disabled={busy || !file}>
-                {busy ? "Working..." : "Upload photo"}
+              <button
+                style={primaryButton}
+                onClick={handleUpload}
+                disabled={busy}
+              >
+                {busy ? "Working..." : file ? "Upload photo" : "Choose a photo"}
               </button>
               <button style={subtleButton} onClick={refreshMeals} disabled={busy}>
                 Refresh list
